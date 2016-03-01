@@ -1,0 +1,8 @@
+<#if licenseFirst??>
+${licenseFirst}
+</#if>
+${licensePrefix} @author Vikthor Nijenhuis
+${licensePrefix} @project peptide fragmentation control${licensePrefix}
+<#if licenseLast??>
+${licenseLast}
+</#if>
