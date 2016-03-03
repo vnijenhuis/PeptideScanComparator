@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Pattern;
-import javax.print.attribute.HashAttributeSet;
 import matrix.PeptideScanMatrixCreator;
 import matrix.ScanValueSetter;
 import tools.CsvWriter;
@@ -57,6 +56,9 @@ public class PeptideScanCollector {
      */
     private ArrayList<String> psmFiles;
 
+    /**
+     * Creates a collection of peptide objects.
+     */
     private final PeptideCollectionCreator peptideCollection;
 
     /**
@@ -65,27 +67,22 @@ public class PeptideScanCollector {
     private PeptideCollection peptides;
 
     /**
-     *
-     */
-    private PeptideCollection matchedPeptides;
-
-    /**
-     *
+     * Csv file writer.
      */
     private final CsvWriter csvWriter;
 
     /**
-     *
+     * Sets scan values to the peptide array.
      */
     private final ScanValueSetter setValues;
 
     /**
-     *
+     * Creates an array with appropriate indices for each peptide sequence.
      */
     private final PeptideScanMatrixCreator scanMatrixCreator;
 
     /**
-     * 
+     * list of sample names.
      */
     private ArrayList<String> sampleList;
 
@@ -131,20 +128,15 @@ public class PeptideScanCollector {
                 .desc("Give the name of the control sample (example: Control) (CASE SENSITIVE!)")
                 .build();
         options.addOption(control);
-        //Amount of threads to use.
-        Option thread = Option.builder("threads")
-                .hasArg()
-                .optionalArg(true)
-                .desc("Amount of threads to use for multithreading. (Default 2)")
-                .build();
-        options.addOption(thread);
         //Checks the input files.
         fileChecker = new ValidFileChecker();
         //Creates a peptide collection
         peptideCollection = new PeptideCollectionCreator();
         //Creates the matrix.
         scanMatrixCreator = new PeptideScanMatrixCreator();
+        //Writes data to a csv file.
         csvWriter = new CsvWriter();
+        //Sets values to the peptide array.
         setValues = new ScanValueSetter();
     }
 
@@ -162,7 +154,7 @@ public class PeptideScanCollector {
         sampleList = new ArrayList<>();
         Integer copdSampleSize = 0;
         Integer healthySampleSize = 0;
-        if (args[0].toLowerCase().contains("help") || args[0].toLowerCase().contains("h")) {
+        if (args.toString().toLowerCase().contains("help") || args.toString().toLowerCase().contains("h")) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("Peptide scan collecter", options );
             System.exit(0);
@@ -177,17 +169,11 @@ public class PeptideScanCollector {
                 throw new IllegalArgumentException("You forgot to add a target or control sample."
                         + "Please check the -target and -control input.");
             }
+            //Control is added first.
             sampleList.add(controlSample);
+            //Target is added second.
             sampleList.add(targetSample);
-            //Allocate amount of threads to use for multithreading.
-            String thread = "";
-            Integer threads = 2;
-            if (cmd.hasOption("threads")) {
-                thread = cmd.getOptionValue("threads"); 
-                if (thread.matches("^[0-9]{1,}$")) {
-                    threads = Integer.parseInt(thread);
-                }
-            }
+            //Detect sample size and add all files to a list.
             for (String folder: path) {
                 SampleSizeGenerator sizeGenerator = new SampleSizeGenerator();
                 ArrayList<Integer> sampleSize = sizeGenerator.getSamples(folder, sampleList);
@@ -219,22 +205,20 @@ public class PeptideScanCollector {
         for (int sample = 0; sample < psmFiles.size(); sample++) {
             String[] path = psmFiles.get(sample).split(pattern);
             Boolean newDataset = true;
-            for (String folder : path) {
-                String dataset = path[path.length-4];
-                if (!datasetNumbers.isEmpty()) {
-                    for (Map.Entry set : datasetNumbers.entrySet()) {
-                        if (set.getKey().equals(dataset)) {
-                            newDataset = false;
-                        }
+            String dataset = path[path.length-4];
+            if (!datasetNumbers.isEmpty()) {
+                for (Map.Entry set : datasetNumbers.entrySet()) {
+                    if (set.getKey().equals(dataset)) {
+                        newDataset = false;
                     }
-                    if (newDataset) {
-                        datasetCount += 1;
-                        datasetNumbers.put(dataset, datasetCount);  
-                    }
-                } else {
-                    datasetCount += 1;
-                    datasetNumbers.put(dataset, datasetCount);
                 }
+                if (newDataset) {
+                    datasetCount += 1;
+                    datasetNumbers.put(dataset, datasetCount);  
+                }
+            } else {
+                datasetCount += 1;
+                datasetNumbers.put(dataset, datasetCount);
             }
         }
         Integer sampleSize = 0;
@@ -245,7 +229,6 @@ public class PeptideScanCollector {
         }
             PeptideCollection finalCollection = new PeptideCollection();
             for (int sample = 0; sample < psmFiles.size(); sample++) {
-                matchedPeptides = new PeptideCollection();
                 peptides = new PeptideCollection();
                 peptides = peptideCollection.createCollection(psmFiles.get(sample));
                 finalCollection.getPeptides().addAll(peptides.getPeptides());
@@ -253,7 +236,11 @@ public class PeptideScanCollector {
         //Creates output file at the specified output path.
         HashSet<ArrayList<String>> peptideMatrix = new HashSet<>();
         peptideMatrix = scanMatrixCreator.createScanMatrix(finalCollection, sampleList, sampleSize);
-        peptideMatrix = setValues.addArrayValues(finalCollection, peptideMatrix, datasetNumbers, sampleSize);
+        peptideMatrix = setValues.addArrayValues(finalCollection, peptideMatrix, sampleList ,datasetNumbers, sampleSize);
+        for (ArrayList<String> p: peptideMatrix) {
+            System.out.println(p);
+        }
+        System.exit(0);
         csvWriter.generateCsvFile(peptideMatrix, output, sampleList, sampleSize);
     }
 }

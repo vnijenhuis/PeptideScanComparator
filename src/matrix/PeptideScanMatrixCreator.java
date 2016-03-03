@@ -15,29 +15,39 @@ import objects.Peptide;
  */
 public class PeptideScanMatrixCreator {
     /**
-     * 
-     * @param peptides 
-     * @param samples 
-     * @param sampleSize 
-     * @return  
+     * Creates a HashSet which contains arrays of peptide data.
+     * @param peptides collection of peptide objects.
+     * @param sampleList list of sample names.
+     * @param sampleSize total amount of samples.
+     * @return HashSet with arrays containing peptide sequence, dataset name and indices for each sample.
      */
-    public HashSet<ArrayList<String>> createScanMatrix(final PeptideCollection peptides, final ArrayList<String> samples, 
-            final Integer sampleSize) {
+    public HashSet<ArrayList<String>> createScanMatrix(final PeptideCollection peptides,
+            final ArrayList<String> sampleList, final Integer sampleSize) {
         System.out.println("Creating lists to store protein-peptide data...");
         ArrayList<String> newEntry;
         HashSet<ArrayList<String>> peptideMatrix = new HashSet<>();
+        //Creates a index for each sample which is added to the newEntry array list.
+        //Doing this step once saves a lot of processing time.
+        ArrayList<String> sampleEntries = new ArrayList<>();
+        for (String sample: sampleList) {
+            for (int i = 0; i < sampleSize; i++) {
+                sampleEntries.add("-");
+            }
+        }
+        //Create list for each unique peptide sequence.
         for (Peptide peptide: peptides.getPeptides()) {
             newEntry = new ArrayList<>();
-            newEntry = createNewEntry(newEntry, peptide, samples, sampleSize);
+            newEntry = createNewEntry(newEntry, peptide, sampleEntries);
             boolean newArray = true;
             if (!peptideMatrix.isEmpty()) {
+                //Check if entry is new.
                 for (ArrayList<String> entry: peptideMatrix) {
                     String sequence = entry.get(0);
                     if (peptide.getSequence().equals(sequence)) {
                         newArray = false;
                     }
                 }
-                //Add new array to the hashset.
+                //Add new entry to the hashset.
                 if (newArray) {
                     peptideMatrix.add(newEntry);
                 }
@@ -58,14 +68,14 @@ public class PeptideScanMatrixCreator {
      * @return 
      */
     private ArrayList<String> createNewEntry(ArrayList<String> newEntry, final Peptide peptide,
-            final ArrayList<String> samples, final Integer sampleSize) {
+            final ArrayList<String> sampleEntries) {
+        //Adds peptide sequence to the entry.
         newEntry.add(peptide.getSequence());
+        //Adds the first dataset name for this peptide sequence
         newEntry.add(peptide.getDataset());
-        for (String sample: samples) {
-            for (int i = 0; i < sampleSize; i++) {
-                newEntry.add("-");
-            }
-        }
+        //Adds indices for each sample to the array.
+        newEntry.addAll(sampleEntries);
+        //Returns the new Array.
         return newEntry;
     }
 }
