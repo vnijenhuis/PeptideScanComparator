@@ -32,6 +32,7 @@ public class CsvWriter {
             //Writes values to the header, line separator="," and line ending="\n"
             String header = createCsvHeader(samples, sampleSize, delimiter, lineEnding);
             writer.append(header);
+            //Create array list row.
             for (ArrayList<String> peptide : peptideMatrix) {
                 String row = createPeptideRow(peptide, delimiter, lineEnding);
                 writer.append(row);

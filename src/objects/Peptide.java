@@ -28,6 +28,7 @@ public class Peptide {
      * Sample to which this peptide belongs to.
      */
     private final String sample;
+    private String coverage;
 
     /**
      * Creates a Peptide object.
@@ -100,5 +101,21 @@ public class Peptide {
     public final String toString() {
         return "Peptide{Sequence; " + this.peptideSequence + ", dataset; "
                 + this.dataset + ", Sample; " + this.sample + ", Scan; " + this.scan + "}";
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public String getCoverage() {
+        return this.coverage;
+    }
+
+    /**
+     * adds a coverage value to the sample.
+     * @param coverage
+     */
+    public void addCoverage(String coverage) {
+       this.coverage += "|" + coverage;
     }
 }

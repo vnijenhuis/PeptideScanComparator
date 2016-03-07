@@ -111,6 +111,12 @@ public class PeptideScanCollector {
                 .desc("Name of the psm file. Use double quotes if name contains a space. (DB seach psm.csv).")
                 .build();
         options.addOption(psm);
+        //Database path parmeter
+        Option dbPath = Option.builder("db")
+                .hasArg()
+                .desc("Path to the database folder (/home/name/Databases/uniprot.fasta.gz)")
+                .build();
+        options.addOption(dbPath);
         //Path and name of the output file.
         Option output = Option.builder("out")
                 .hasArg()
@@ -163,18 +169,24 @@ public class PeptideScanCollector {
             String[] path = cmd.getOptionValues("in");
             String psmFile = cmd.getOptionValue("psm");
             String output = cmd.getOptionValue("out");
+            String database = cmd.getOptionValue("db");
             String controlSample = cmd.getOptionValue("control");
             String targetSample = cmd.getOptionValue("target");
             if (controlSample.isEmpty() || targetSample.isEmpty()) {
                 throw new IllegalArgumentException("You forgot to add a target or control sample."
                         + "Please check the -target and -control input.");
             }
+            //Check file and folder validity.
+            fileChecker.isCsv(psmFile);
+            fileChecker.isFasta(database);
+            fileChecker.isDirectory(output);
             //Control is added first.
             sampleList.add(controlSample);
             //Target is added second.
             sampleList.add(targetSample);
             //Detect sample size and add all files to a list.
             for (String folder: path) {
+                fileChecker.isDirectory(folder);
                 SampleSizeGenerator sizeGenerator = new SampleSizeGenerator();
                 ArrayList<Integer> sampleSize = sizeGenerator.getSamples(folder, sampleList);
                 fileChecker.checkFileValidity(folder, psmFile, psmFiles);
@@ -185,8 +197,8 @@ public class PeptideScanCollector {
                 if (sampleSize.get(1) > copdSampleSize) {
                     copdSampleSize = sampleSize.get(1);
                 }
+                fragmentationControl(output, copdSampleSize, healthySampleSize);
             }
-            fragmentationControl(output, copdSampleSize, healthySampleSize);
         }
     }
 
