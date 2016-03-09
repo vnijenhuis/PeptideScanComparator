@@ -5,6 +5,7 @@
 package tools;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,6 +43,9 @@ public class ValidFileChecker {
                 }
             }
         }
+        if (fileList.isEmpty()) {
+            throw new FileNotFoundException("No file found with given name: " + fileName);
+        }
         return fileList;
     }
 
@@ -74,6 +78,27 @@ public class ValidFileChecker {
     }
 
     /**
+     * Gets fasta database files.
+     * @param path path to the fasta database files.
+     * @param fileList list of files.
+     * @param sampleList list of samples.
+     * @return array list with database files.
+     */
+    public final ArrayList<String> getFastaDatabaseFiles(String path, ArrayList<String> fileList,
+            final ArrayList<String> sampleList) {
+        File filePath = new File(path);
+        String regexMatch = ".*(" + sampleList.get(0) + "|" + sampleList.get(1) + ")_?\\d{1,}.*_database.fa(sta)?";
+        for (File file: filePath.listFiles()) {
+            //match to any database.fa(sta) files with COPD/Healthy as sample name.
+            if (file.toString().matches(regexMatch)) {
+                fileList.add(file.toString());
+                System.out.println("Found " + file);
+            }
+        }
+        return fileList;
+    }
+
+    /**
      * Check is a file is a fasta file.
      * @param file file name as string.
      * @return true if valid, commandline exception if invalid
@@ -84,22 +109,18 @@ public class ValidFileChecker {
             throw new IllegalArgumentException("Invalid file found:" + file);
         }
         //Matches fastas files.
-        if (!file.matches(".*\\.fa(sta){0,1}")) {
+        if (!file.matches(".*\\.fa(sta)?(.gz)?")) {
             throw new IllegalArgumentException("Invalid fasta file found: " + file);
         }
         return true;
     }
 
     /**
-     * Check is a file is a csv file.
+     * Check if the input is a .csv file.
      * @param file file name as string.
      * @return true if valid, commandline exception if invalid
      */
     public final Boolean isCsv(final String file) {
-        File checkFile = new File(file);
-        if (!checkFile.isFile()) {
-            throw new IllegalArgumentException("Invalid file found:" + file);
-        }
         //Matches csv files.
         if (!file.matches(".*\\.csv")) {
             throw new IllegalArgumentException("Invalid fasta file found: " + file);

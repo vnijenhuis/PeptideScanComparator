@@ -74,7 +74,7 @@ public class PeptideCollectionCreator {
             String coverage = data[coverageIndex];
             //Can remove (+15.99) and similar matches from a peptide sequence.
 //           sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
-            Peptide peptide = new Peptide(sequence, scan, dataset, sample);
+            Peptide peptide = new Peptide(sequence, scan, coverage, dataset, sample);
             Boolean newPeptide = true;
             //Loop through existing peptide objects to match sequences.
             if (!peptides.getPeptides().isEmpty()) {

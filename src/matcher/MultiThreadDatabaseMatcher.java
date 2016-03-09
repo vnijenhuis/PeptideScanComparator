@@ -6,6 +6,7 @@ package matcher;
 
 import collections.PeptideCollection;
 import collections.ProteinCollection;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,8 @@ public class MultiThreadDatabaseMatcher implements Callable {
      * Collection of proteins.
      */
     private final ProteinCollection proteins;
+    private PeptideCollection matchedPeptideCollection;
+    private PeptideCollection nonMatchedPeptideCollection;
 
     /**
      * Multi-tread database matcher.
@@ -37,6 +40,8 @@ public class MultiThreadDatabaseMatcher implements Callable {
     public MultiThreadDatabaseMatcher(final PeptideCollection peptides, final ProteinCollection proteins) {
         this.peptides = peptides;
         this.proteins = proteins;
+        this.matchedPeptideCollection = new PeptideCollection();
+        this.nonMatchedPeptideCollection = new PeptideCollection();
     }
 
     /**
@@ -45,7 +50,7 @@ public class MultiThreadDatabaseMatcher implements Callable {
      */
     @Override
     public Object call() {
-        PeptideCollection matchedPeptideCollection = new PeptideCollection();
+        matchedPeptideCollection = new PeptideCollection();
         //Matches peptides to the protein database.
         int count = 0;
         for (Peptide peptide: peptides.getPeptides()) {
@@ -55,19 +60,23 @@ public class MultiThreadDatabaseMatcher implements Callable {
                 //Checks if peptide sequence is present in the given database(s).
                 String sequence = peptide.getSequence().replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
                 if (protein.getSequence().contains(sequence)) {
+                    matchedPeptideCollection.addPeptide(peptide);
                         noMatch = false;
                         break;
                     }
                 }
                 if (noMatch) {
-                    matchedPeptideCollection.addPeptide(peptide);
+                    nonMatchedPeptideCollection.addPeptide(peptide);
                 }
             if (count % 1000 == 0) {
                 System.out.println("Matched " + count + " peptide sequences to database.");
             }
         }
+        ArrayList<PeptideCollection> peptideList = new ArrayList<>();
+        peptideList.add(matchedPeptideCollection);
+        peptideList.add(nonMatchedPeptideCollection);
         //Returns the peptides that did NOT match to the protein database.
-        return matchedPeptideCollection;
+        return peptideList;
     }
 
     /**
@@ -79,21 +88,22 @@ public class MultiThreadDatabaseMatcher implements Callable {
      * @throws InterruptedException process was interrupted.
      * @throws ExecutionException could not execute the call function.
      */
-    public PeptideCollection getMatchedPeptides(final PeptideCollection peptides, final ProteinCollection proteins, 
+    public ArrayList<PeptideCollection> getMatchedPeptides(final PeptideCollection peptides, final ProteinCollection proteins, 
             final Integer threads) throws InterruptedException, ExecutionException {
-        PeptideCollection finalPeptides = new PeptideCollection();
+        ArrayList<PeptideCollection> peptideList = new ArrayList<>();
         //Creates a new execution service and sets the amount of threads to use. (if available)
         System.out.println("Using " + threads + " threads to match peptides to the protein database.");
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         //Executes the call function of MultiThreadDatabaseMatcher.
-        Callable<PeptideCollection> callable = new MultiThreadDatabaseMatcher(peptides, proteins);
+        Callable<ArrayList<PeptideCollection>> callable = new MultiThreadDatabaseMatcher(peptides, proteins);
         //Collects the output from the call function
-        Future<PeptideCollection> future = pool.submit(callable);
+        Future<ArrayList<PeptideCollection>> future = pool.submit(callable);
+        peptideList = future.get();
         //Adds the output to finalPeptides.
-        finalPeptides = future.get();
-        System.out.println(finalPeptides.getPeptides().size() + " peptides did not match to the protein database.");
+        System.out.println(peptideList.get(0).getPeptides().size() + " peptides matched to the protein database");
+        System.out.println(peptideList.get(1).getPeptides().size() + " peptides did not match to the protein database.");
         //Shutdown command for the pool to prevent the script from running infinitely.
         pool.shutdown();
-        return finalPeptides;
+        return peptideList;
     }
 }
