@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 import objects.Peptide;
 
@@ -46,9 +48,10 @@ public class PeptideCollectionCreator {
         FileReader fr = new FileReader(file);
         BufferedReader bffFr = new BufferedReader(fr);
         String line;
-        int coverageIndex = 0;
+        int accessionIndex = 0;
         int peptideIndex = 0;
         int scanIndex = 0;
+        int scoreIndex = 0;
         boolean firstLine = true;
         //Reads each line in the given file.
         while ((line = bffFr.readLine()) != null) {
@@ -59,43 +62,54 @@ public class PeptideCollectionCreator {
                         peptideIndex = i;
                     } 
                     else if (data[i].toLowerCase().contains("accession")) {
-                        coverageIndex = i; 
+                        accessionIndex = i; 
                     } 
                     else if (data[i].toLowerCase().contains("scan")) {
                         scanIndex = i;
+                    }
+                    else if (data[i].toLowerCase().contains("-10lgp")) {
+                        scoreIndex = i;
                     }
                 }
                 firstLine = false;
                 line = bffFr.readLine();
             }
             String[] data = line.split(",");
-            String sequence = data[peptideIndex];
             String scan = data[scanIndex];
-            String coverage = data[coverageIndex];
-            //Can remove (+15.99) and similar matches from a peptide sequence.
-//           sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
-            Peptide peptide = new Peptide(sequence, scan, coverage, dataset, sample);
-            Boolean newPeptide = true;
-            //Loop through existing peptide objects to match sequences.
-            if (!peptides.getPeptides().isEmpty()) {
-                for (Peptide p: peptides.getPeptides()) {
-                    //Update entry if sequences match.
-                    if (p.getSequence().equals(sequence)) {
-                        if (!p.getScan().contains(scan)) {
-                            p.addScan(scan);
-                        } if (p.getCoverage().contains(coverage)) {
-                            p.addCoverage(coverage);
+            String accessionData = "";
+            String score = data[scoreIndex];
+            ArrayList<String> accessions = new ArrayList<>();
+            //Checks if accession index is possible to grab. (empty columns reduce data.length)
+            if (data.length >  accessionIndex) {
+                accessionData = data[accessionIndex];
+                //Splits the accessions names if possible.
+                if (accessionData.contains(":")) {
+                    accessions.addAll(Arrays.asList(accessionData.split(":")));
+                } else {
+                    accessions.add(accessionData);
+                }
+            }
+            for (String accession: accessions) {
+                if (!accession.toUpperCase().matches("^ENST[0-9]+$") && !accession.toUpperCase().contains("DECOY")) {
+                    String sequence = data[peptideIndex];
+                    //Can remove (+15.99) and similar matches from a peptide sequence.
+    //                sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
+                    Peptide peptide = new Peptide(sequence, scan, score, dataset, sample);
+                    Boolean newPeptide = true;
+                    //Create new peptide objects.
+                    if (!peptides.getPeptides().isEmpty()) {
+                        for (Peptide p: peptides.getPeptides()) {
+                            if (p.getSequence().equals(sequence)) {
+                                newPeptide = false;
+                            }
                         }
-                        newPeptide = false;
+                        if (newPeptide) {
+                            peptides.addPeptide(peptide);
+                        }
+                    } else {
+                        peptides.addPeptide(peptide);
                     }
                 }
-                //Add new entries.
-                if (newPeptide) {
-                    peptides.addPeptide(peptide);
-                }
-                //Add first entry.
-            } else {
-                peptides.addPeptide(peptide);
             }
         }
         System.out.println("Collected " + peptides.getPeptides().size() + " unique peptides from " + sample + " " + dataset + "!");

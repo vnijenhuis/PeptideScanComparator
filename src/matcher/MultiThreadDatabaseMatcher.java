@@ -29,13 +29,21 @@ public class MultiThreadDatabaseMatcher implements Callable {
      * Collection of proteins.
      */
     private final ProteinCollection proteins;
-    private PeptideCollection matchedPeptideCollection;
-    private PeptideCollection nonMatchedPeptideCollection;
 
     /**
-     * Multi-tread database matcher.
-     * @param peptides peptide collection.
-     * @param proteins  
+     * Contains the matched peptides.
+     */
+    private PeptideCollection matchedPeptideCollection;
+
+    /**
+     * Contains non-matched peptides.
+     */
+    private final PeptideCollection nonMatchedPeptideCollection;
+
+    /**
+     * Multithreaded database matcher.
+     * @param peptides collection of peptide objects.
+     * @param proteins collection of protein objects.
      */
     public MultiThreadDatabaseMatcher(final PeptideCollection peptides, final ProteinCollection proteins) {
         this.peptides = peptides;
@@ -49,7 +57,7 @@ public class MultiThreadDatabaseMatcher implements Callable {
      * @return returns a peptide collection with peptides that did NOT match to the protein database. 
      */
     @Override
-    public Object call() {
+    public final Object call() {
         matchedPeptideCollection = new PeptideCollection();
         //Matches peptides to the protein database.
         int count = 0;
@@ -75,7 +83,7 @@ public class MultiThreadDatabaseMatcher implements Callable {
         ArrayList<PeptideCollection> peptideList = new ArrayList<>();
         peptideList.add(matchedPeptideCollection);
         peptideList.add(nonMatchedPeptideCollection);
-        //Returns the peptides that did NOT match to the protein database.
+        //Returns two peptide collections as an array list.
         return peptideList;
     }
 
@@ -90,7 +98,6 @@ public class MultiThreadDatabaseMatcher implements Callable {
      */
     public ArrayList<PeptideCollection> getMatchedPeptides(final PeptideCollection peptides, final ProteinCollection proteins, 
             final Integer threads) throws InterruptedException, ExecutionException {
-        ArrayList<PeptideCollection> peptideList = new ArrayList<>();
         //Creates a new execution service and sets the amount of threads to use. (if available)
         System.out.println("Using " + threads + " threads to match peptides to the protein database.");
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -98,8 +105,8 @@ public class MultiThreadDatabaseMatcher implements Callable {
         Callable<ArrayList<PeptideCollection>> callable = new MultiThreadDatabaseMatcher(peptides, proteins);
         //Collects the output from the call function
         Future<ArrayList<PeptideCollection>> future = pool.submit(callable);
-        peptideList = future.get();
-        //Adds the output to finalPeptides.
+        //Adds peptide collections to a list.
+        ArrayList<PeptideCollection> peptideList = future.get();
         System.out.println(peptideList.get(0).getPeptides().size() + " peptides matched to the protein database");
         System.out.println(peptideList.get(1).getPeptides().size() + " peptides did not match to the protein database.");
         //Shutdown command for the pool to prevent the script from running infinitely.

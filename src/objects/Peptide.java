@@ -38,16 +38,18 @@ public class Peptide {
      * Creates a Peptide object.
      * @param peptideSequence contains the peptide amino acid sequence.
      * @param scanData data of the Scan parameter from DB search psm.csv.
-     * @param dataset ID of the Scan parameter.
-     * @param sample sample name that this peptide belongs to.
+     * @param peptideCoverage contains the peptide coverage value.
+     * @param peptideDataset ID of the Scan parameter.
+     * @param sampleName sample name that this peptide belongs to.
      */
-    public Peptide(final String peptideSequence, final String scanData, final String coverage ,final String dataset,
-            final String sample) {
+    public Peptide(final String peptideSequence, final String scanData,
+            final String peptideCoverage ,final String peptideDataset,
+            final String sampleName) {
         this.peptideSequence = peptideSequence;
-        this.dataset = dataset;
+        this.dataset = peptideDataset;
         this.scan = scanData;
-        this.coverage = coverage;
-        this.sample = sample;
+        this.coverage = peptideCoverage;
+        this.sample = sampleName;
     }
 
     /**
@@ -65,13 +67,13 @@ public class Peptide {
     public final String getDataset() {
         return this.dataset;
     }
-    
+
      /**
      * Adds an additional dataset name.
-     * @param dataset dataset name.
+     * @param newDataset dataset name.
      */
-    public final void addDataset(final String dataset) {
-        this.dataset = this.dataset + dataset;
+    public final void addDataset(final String newDataset) {
+        this.dataset = this.dataset + newDataset;
     }
 
     /**
@@ -84,10 +86,10 @@ public class Peptide {
 
     /**
      * Adds Scan data to this peptide.
-     * @param scan Scan File:ID as String.
+     * @param scanID Scan File:ID as String.
      */
-    public final void addScan(final String scan) {
-        this.scan = this.scan + "|" + scan;
+    public final void addScan(final String scanID) {
+        this.scan = this.scan + "|" + scanID;
     }
 
     /**
@@ -99,19 +101,19 @@ public class Peptide {
     }
 
     /**
-     * 
-     * @return
+     * Gets the coverage value of the peptide.
+     * @return coverage value of the peptide.
      */
-    public String getCoverage() {
+    public final String getCoverage() {
         return this.coverage;
     }
 
     /**
      * adds a coverage value to the sample.
-     * @param coverage
+     * @param peptideCoverage new coverage value that should be added.
      */
-    public void addCoverage(String coverage) {
-       this.coverage += "|" + coverage;
+    public final void addCoverage(final String peptideCoverage) {
+       this.coverage += "|" + peptideCoverage;
     }
 
     /**
@@ -121,6 +123,7 @@ public class Peptide {
     @Override
     public final String toString() {
         return "Peptide{Sequence; " + this.peptideSequence + ", dataset; "
-                + this.dataset + ", Sample; " + this.sample + ", Scan; " + this.scan + ", Coverage; " + this.coverage + "}";
+                + this.dataset + ", Sample; " + this.sample + ", Scan; "
+                + this.scan + ", Coverage; " + this.coverage + "}";
     }
 }

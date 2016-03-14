@@ -14,18 +14,19 @@ import objects.Peptide;
  * For example: uniprot, ensemble, all individual proteins.
  * @author vnijenhuis
  */
-public class IndividualDatabaseMatcher {
+public class SampleDatabaseMatcher {
     /**
      * Matches peptide sequences to a combined database of individual protein sequences.
      * @param peptides collection of Peptide objects.
      * @param proteins collection of Protein objects.
      * @return ProteinPeptideCollection with adjusted values.
      */
-    public final PeptideCollection matchToIndividual(PeptideCollection peptides, ProteinCollection proteins) {
+    public final PeptideCollection matchToProteins(PeptideCollection peptides, ProteinCollection proteins) {
         System.out.println("Matching sequences to individual database.");
         PeptideCollection individualPeptides = new PeptideCollection();
         int count = 0;
         for (Peptide peptide: peptides.getPeptides()) {
+            //Remove all instances of for example (15.99+) from the peptide sequence.
             String sequence = peptide.getSequence().replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
             count += 1;
             //Test if a protein sequence contains the peptide sequence.
