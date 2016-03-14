@@ -48,6 +48,8 @@ public class ProteinCollectionCreator {
             } else if (database.matches(".*\\.fa(sta){0,1}")){
                 FileReader fr = new FileReader(file);
                 dbReader = new BufferedReader(fr);
+            } else {
+                throw new IllegalArgumentException("Given database was not found: " + file);
             }
             String line;
             boolean firstLine = true;

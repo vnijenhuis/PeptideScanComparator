@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import objects.Peptide;
+import org.apache.commons.exec.CommandLine;
 
 /**
  * Writes a csv file with peptide scan data.
@@ -58,8 +59,8 @@ public class CsvWriter {
         String header = "";
         header += "Sequence,";
         header += "Dataset,";
-        header += "Sample";
-        header += "Scan ID";
+        header += "Sample,";
+        header += "Scan ID,";
         header += "Score";
 //        for (String sample: samples) {
 //            for (int i = 1; i <= sampleSize; i++) {
@@ -88,7 +89,7 @@ public class CsvWriter {
         row += peptide.getDataset()+ separator;
         row += peptide.getSample() + separator;
         row += peptide.getScan() + separator;
-        row += peptide.getCoverage() + lineEnding;
+        row += peptide.getScore() + lineEnding;
         
 //        for (int i = 0; i < peptide.size(); i++) {
 //            if (i == peptide.size() - 1) {

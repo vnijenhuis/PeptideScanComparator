@@ -32,24 +32,30 @@ public class Peptide {
     /**
      * Coverage value.
      */
-    private String coverage;
+    private String score;
+
+    /**
+     * Field for matched scan data. contains scan ID's from combined/individual data that matched to the uniprot scan ID's.
+     */
+    private String matchedScan;
 
     /**
      * Creates a Peptide object.
      * @param peptideSequence contains the peptide amino acid sequence.
      * @param scanData data of the Scan parameter from DB search psm.csv.
-     * @param peptideCoverage contains the peptide coverage value.
+     * @param peptideScore contains the peptide score value.
      * @param peptideDataset ID of the Scan parameter.
      * @param sampleName sample name that this peptide belongs to.
      */
     public Peptide(final String peptideSequence, final String scanData,
-            final String peptideCoverage ,final String peptideDataset,
+            final String peptideScore ,final String peptideDataset,
             final String sampleName) {
         this.peptideSequence = peptideSequence;
         this.dataset = peptideDataset;
         this.scan = scanData;
-        this.coverage = peptideCoverage;
+        this.score = peptideScore;
         this.sample = sampleName;
+        this.matchedScan = "NA";
     }
 
     /**
@@ -92,6 +98,22 @@ public class Peptide {
         this.scan = this.scan + "|" + scanID;
     }
 
+     /**
+     * Returns the Scan data.
+     * @return Scan data as String.
+     */
+    public final String getMatchedScan() {
+        return this.matchedScan;
+    }   
+
+    /**
+     * Adds Scan data to this peptide.
+     * @param scanID Scan File:ID as String.
+     */
+    public final void addMatchedScan(final String scanID) {
+        this.matchedScan = this.matchedScan + "|" + scanID;
+    }
+
     /**
      * Returns the sample id.
      * @return accession id as String.
@@ -101,19 +123,19 @@ public class Peptide {
     }
 
     /**
-     * Gets the coverage value of the peptide.
-     * @return coverage value of the peptide.
+     * Gets the score value (-10lgp) of the peptide.
+     * @return score value of the peptide.
      */
-    public final String getCoverage() {
-        return this.coverage;
+    public final String getScore() {
+        return this.score;
     }
 
     /**
-     * adds a coverage value to the sample.
-     * @param peptideCoverage new coverage value that should be added.
+     * adds a score value to the sample.
+     * @param peptideScore new score value that should be added.
      */
-    public final void addCoverage(final String peptideCoverage) {
-       this.coverage += "|" + peptideCoverage;
+    public final void addScore(final String peptideScore) {
+       this.score += "|" + peptideScore;
     }
 
     /**
@@ -124,6 +146,6 @@ public class Peptide {
     public final String toString() {
         return "Peptide{Sequence; " + this.peptideSequence + ", dataset; "
                 + this.dataset + ", Sample; " + this.sample + ", Scan; "
-                + this.scan + ", Coverage; " + this.coverage + "}";
+                + this.scan + ", Matched Scan; " + this.matchedScan + ", Score; " + this.score + "}";
     }
 }

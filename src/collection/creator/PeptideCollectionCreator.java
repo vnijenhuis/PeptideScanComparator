@@ -23,25 +23,25 @@ public class PeptideCollectionCreator {
     /**
      * Creates a collection of peptide objects.
      * @param file loads a DB search psm.csv file.
+     * @param dataset
+     * @param sampleList
      * @return Collection of peptide objects.
      * @throws FileNotFoundException could not find the specified file.
      * @throws IOException could not find/open the specified file.
      */
-    public final PeptideCollection createCollection(final String file) throws FileNotFoundException, IOException {
+    public final PeptideCollection createCollection(final String file, final String dataset,
+            final ArrayList<String> sampleList) throws FileNotFoundException, IOException {
         // Read the file
         PeptideCollection peptides = new PeptideCollection();
         String pattern = Pattern.quote(File.separator);
         String[] path = file.split(pattern);
         String sample = "";
-        String dataset = "";
         //Creates the dataset and sample names.
         for (String folder : path) {
             //Match sample names.
-            if (folder.toLowerCase().matches("^(copd|healthy|control)_?\\d{1,}$")) {
+            String expression = "^(" + sampleList.get(0).toLowerCase() + "|" + sampleList.get(1).toLowerCase() + ")_?\\d{1,}$";
+            if (folder.toLowerCase().matches(expression)) {
                 sample = folder;
-                //Match dataset names.
-            } else if (folder.toUpperCase().matches("^(1D25CM|1D50CM|2DLCMSMS)$")) {
-                dataset = folder;
             }
         }
         System.out.println("Collecting peptides from " + sample + " " + dataset + "...");
@@ -49,7 +49,7 @@ public class PeptideCollectionCreator {
         BufferedReader bffFr = new BufferedReader(fr);
         String line;
         int accessionIndex = 0;
-        int peptideIndex = 0;
+        int sequenceIndex = 0;
         int scanIndex = 0;
         int scoreIndex = 0;
         boolean firstLine = true;
@@ -58,15 +58,19 @@ public class PeptideCollectionCreator {
             if (firstLine) {
                 String[] data = line.split(",");
                 for (int i = 0; i < data.length; i++) {
+                    //Peptide sequence index.
                     if (data[i].toLowerCase().equals("peptide")) {
-                        peptideIndex = i;
+                        sequenceIndex = i;
                     } 
+                    //Accession ID index.
                     else if (data[i].toLowerCase().contains("accession")) {
                         accessionIndex = i; 
                     } 
+                    //Scan ID index.
                     else if (data[i].toLowerCase().contains("scan")) {
                         scanIndex = i;
                     }
+                    //Score index.
                     else if (data[i].toLowerCase().contains("-10lgp")) {
                         scoreIndex = i;
                     }
@@ -79,7 +83,7 @@ public class PeptideCollectionCreator {
             String accessionData = "";
             String score = data[scoreIndex];
             ArrayList<String> accessions = new ArrayList<>();
-            //Checks if accession index is possible to grab. (empty columns reduce data.length)
+            //Checks if accession index is possible to grab. (Analysis can provide empty accession ID's for some reason)
             if (data.length >  accessionIndex) {
                 accessionData = data[accessionIndex];
                 //Splits the accessions names if possible.
@@ -90,8 +94,9 @@ public class PeptideCollectionCreator {
                 }
             }
             for (String accession: accessions) {
-                if (!accession.toUpperCase().matches("^ENST[0-9]+$") && !accession.toUpperCase().contains("DECOY")) {
-                    String sequence = data[peptideIndex];
+                //Skip decoy sequences.
+                if (!accession.toUpperCase().contains("DECOY")) {
+                    String sequence = data[sequenceIndex];
                     //Can remove (+15.99) and similar matches from a peptide sequence.
     //                sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
                     Peptide peptide = new Peptide(sequence, scan, score, dataset, sample);
@@ -101,6 +106,13 @@ public class PeptideCollectionCreator {
                         for (Peptide p: peptides.getPeptides()) {
                             if (p.getSequence().equals(sequence)) {
                                 newPeptide = false;
+                                if (!p.getScan().contains(scan)) {
+                                    p.addScan(scan);
+                                }
+                                if (!p.getScore().contains(score)) {
+                                    p.addScore(score);
+                                }
+                                break;
                             }
                         }
                         if (newPeptide) {
@@ -112,7 +124,9 @@ public class PeptideCollectionCreator {
                 }
             }
         }
-        System.out.println("Collected " + peptides.getPeptides().size() + " unique peptides from " + sample + " " + dataset + "!");
+        //Returns the collection of peptide sequences.
+        System.out.println("Collected " + peptides.getPeptides().size() + " unique peptide sequences from " 
+                + sample + " " + dataset + "!");
         return peptides;
     }
 }
