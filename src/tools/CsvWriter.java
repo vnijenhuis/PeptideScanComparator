@@ -20,18 +20,17 @@ public class CsvWriter {
      * @param peptideMatrix set of peptide arrays.
      * @param outputPath output path and file name.
      * @param samples set of samples.
-     * @param sampleSize sample size.
      * @throws IOException 
      */
     public void generateCsvFile(PeptideCollection peptideMatrix, final String outputPath,
-            final ArrayList<String> samples, final Integer sampleSize) throws IOException {
+            final ArrayList<String> samples) throws IOException {
         //Create a new FileWriter instance.
         try (FileWriter writer = new FileWriter(outputPath)) {
             String delimiter = ",";
             String lineEnding = "\n";
             System.out.println("Writing data to text file " + outputPath);
             //Writes values to the header, line separator="," and line ending="\n"
-            String header = createCsvHeader(samples, sampleSize, delimiter, lineEnding);
+            String header = createCsvHeader(samples, delimiter, lineEnding);
             writer.append(header);
             //Create array list row.
             for (Peptide peptide : peptideMatrix.getPeptides()) {
@@ -47,20 +46,20 @@ public class CsvWriter {
     /**
      * Creates a header for the csv file.
      * @param samples set of samples.
-     * @param sampleSize sample size.
      * @param delimiter line separator for csv file.
      * @param lineEnding line ending for csv file.
      * @return returns a header for the csv file.
      */
-    public final String createCsvHeader(final ArrayList<String> samples, final Integer sampleSize,
+    public final String createCsvHeader(final ArrayList<String> samples,
             final String delimiter, final String lineEnding) {
         String header = "";
         header += "Sequence,";
         header += "Dataset,";
         header += "Sample,";
-        header += "Scan ID,";
-//        header += "Uniprot Scan ID,";
-        header += "Score";
+        header += "Uniprot matched Scan ID,";
+        header += "Non-matched Scan ID,";
+        header += "Uniprot Score,";
+        header += "Non-Uniprot Score";
 //        for (String sample: samples) {
 //            for (int i = 1; i <= sampleSize; i++) {
 //                if (sample.equals(samples.get(samples.size()-1)) && i == sampleSize) {
@@ -87,9 +86,11 @@ public class CsvWriter {
         row += peptide.getSequence() + separator;
         row += peptide.getDataset()+ separator;
         row += peptide.getSample() + separator;
-        row += peptide.getScan() + separator;
+        row += peptide.getNonUniprotScan() + separator;
+        row += peptide.getUniprotScan() + separator;
 //        row += peptide.getMatchedScan() + separator;
-        row += peptide.getScore() + lineEnding;       
+        row += peptide.getNonUniprotScore() + separator;    
+        row += peptide.getUniprotScore() + lineEnding;       
 //        for (int i = 0; i < peptide.size(); i++) {
 //            if (i == peptide.size() - 1) {
 //                row += peptide.get(i) + lineEnding;

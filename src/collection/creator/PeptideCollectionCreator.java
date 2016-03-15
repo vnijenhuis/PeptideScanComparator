@@ -29,7 +29,7 @@ public class PeptideCollectionCreator {
      * @throws FileNotFoundException could not find the specified file.
      * @throws IOException could not find/open the specified file.
      */
-    public final PeptideCollection createCollection(final String file, final String dataset,
+    public final PeptideCollection createPeptideCollection(final String file, final String dataset,
             final ArrayList<String> sampleList) throws FileNotFoundException, IOException {
         // Read the file
         PeptideCollection peptides = new PeptideCollection();
@@ -106,12 +106,8 @@ public class PeptideCollectionCreator {
                         for (Peptide p: peptides.getPeptides()) {
                             if (p.getSequence().equals(sequence)) {
                                 newPeptide = false;
-                                if (!p.getScan().contains(scan)) {
-                                    p.addScan(scan);
-                                }
-                                if (!p.getScore().contains(score)) {
-                                    p.addScore(score);
-                                }
+                                p.addScan(scan);
+                                p.addScore(score);
                                 break;
                             }
                         }

@@ -19,12 +19,12 @@ public class ValidFileChecker {
      * Checks if files exist and add them to an array for further usage.
      * @param filePath path to the file(s).
      * @param fileName string that is unique to the file name. (to prevent unnecessary input).
-     * @param fileList list of files to add entries to.
      * @return ArrayList with path as String.
      * @throws IOException couldn't open/find the specified file. Usually appears when a file is
      * already opened by another program.
      */
-    public ArrayList<String> checkFileValidity(final String filePath, String fileName, ArrayList<String> fileList) throws IOException {
+    public ArrayList<String> checkFileValidity(final String filePath, String fileName) throws IOException {
+        ArrayList<String> fileList = new ArrayList<>();
         //Go through all folders and files in a given path.
         File file = new File(filePath);
         String[] directories = file.list(new FilenameFilter() {
