@@ -61,7 +61,7 @@ public class MultiThreadDatabaseMatcher implements Callable {
         matchedPeptideCollection = new PeptideCollection();
         //Matches peptides to the protein database.
         int count = 0;
-        for (Peptide peptide: peptides.getPeptides().subList(0, 1000)) {
+        for (Peptide peptide: peptides.getPeptides()) {
             count += 1;
             Boolean noMatch = true;
             for (Protein protein : proteins.getProteins()) {

@@ -313,19 +313,24 @@ public class PeptideScanCollector {
     private void fragmentationControl(final String output, final Integer copdSampleSize,
             final Integer healthySampleSize) throws IOException, InterruptedException, ExecutionException {
         Integer datasetCount = 0;
-        String pattern = Pattern.quote(File.separator);
-        sampleFiles = new ArrayList<>();
+        //File separator for the given path.
+        String separator = Pattern.quote(File.separator);
         HashMap<String, Integer> datasetNumbers = new HashMap<>();
         PeptideCollection matchedPeptides = new PeptideCollection();
         PeptideCollection nonMatchedPeptides = new PeptideCollection();
         PeptideCollection individualPeptides = new PeptideCollection();
         PeptideCollection combinedPeptides = new PeptideCollection();
+        //Creates a protein object collection.
         proteins = new ProteinCollection();
         proteins = createProteins.createCollection(database, proteins);
         String method = "";
+        String combined = "Combined";
+        String individual = "Individual";
+        //Iterates through all psm files inside the list.
         for (String psmFile : psmFiles) {
+            sampleFiles = new ArrayList<>();
             //Split file name to check for sample names.
-            String[] path = psmFile.split(pattern);
+            String[] path = psmFile.split(separator);
             Boolean newDataset = true;
             String dataset = path[path.length - 4];
             method = path[path.length - 3];
@@ -336,6 +341,7 @@ public class PeptideScanCollector {
                         newDataset = false;
                     }
                 }
+                //Add new dataset and corresponding number to the hashmap.
                 if (newDataset) {
                     datasetCount += 1;
                     datasetNumbers.put(dataset, datasetCount);
@@ -344,14 +350,15 @@ public class PeptideScanCollector {
                 datasetCount += 1;
                 datasetNumbers.put(dataset, datasetCount);
             }
+            //Determine fasta database file for the given sample.
             for (String folder : path) {
                 //Gathers sample names to match to the individual database.fasta files.
-                if (folder.matches("(" + sampleList.get(1) + ")_?\\d{1,}")) {
-                    sampleFiles.add(folder);
-                    sampleFiles.add(folder.subSequence(0, sampleList.get(1).length()) + "_" + folder.substring(sampleList.get(1).length()));
-                } else if (folder.matches("(" + sampleList.get(0) + ")_?\\d{1,}")) {
+                if (folder.matches("(" + sampleList.get(0) + ")_?\\d{1,}")) {
                     sampleFiles.add(folder);
                     sampleFiles.add(folder.subSequence(0, sampleList.get(0).length()) + "_" + folder.substring(sampleList.get(0).length()));
+                } else if (folder.matches("(" + sampleList.get(1) + ")_?\\d{1,}")) {
+                    sampleFiles.add(folder);
+                    sampleFiles.add(folder.subSequence(0, sampleList.get(1).length()) + "_" + folder.substring(sampleList.get(1).length()));
                 }
             }
             //Gathers individual protein database file.
@@ -370,8 +377,8 @@ public class PeptideScanCollector {
             individualProteins = new ProteinCollection();
             individualProteins = createProteins.createCollection(sampleFile, individualProteins);
             //Matches the non-matched peptides tot the individual database.
-            sampleProteinMatcher = new SampleDatabaseMatcher(nonMatchedPeptides, individualProteins, "Individual");
-            PeptideCollection matchedIndividuals = sampleProteinMatcher.getMatchedPeptides(nonMatchedPeptides, individualProteins, threads,"Individual");
+            sampleProteinMatcher = new SampleDatabaseMatcher(nonMatchedPeptides, individualProteins, individual);
+            PeptideCollection matchedIndividuals = sampleProteinMatcher.getMatchedPeptides(nonMatchedPeptides, individualProteins, threads,individual);
             //Adds matched individuals to the collection.
             individualPeptides.getPeptides().addAll(matchedIndividuals.getPeptides());
         }
@@ -379,8 +386,8 @@ public class PeptideScanCollector {
         combinedProteins = new ProteinCollection();
         combinedProteins = createProteins.createCollection(combinedDatabase, combinedProteins);
         //Matches the non-matched peptides to the combined protein database.
-        sampleProteinMatcher = new SampleDatabaseMatcher(nonMatchedPeptides, combinedProteins, "Combined");
-        combinedPeptides = sampleProteinMatcher.getMatchedPeptides(nonMatchedPeptides, combinedProteins, threads, "Combined");
+        sampleProteinMatcher = new SampleDatabaseMatcher(nonMatchedPeptides, combinedProteins, combined);
+        combinedPeptides = sampleProteinMatcher.getMatchedPeptides(nonMatchedPeptides, combinedProteins, threads, combined);
         //List of peptide collections.
         ArrayList<PeptideCollection> finalPeptides = new ArrayList<>();
         ArrayList<String> rnaSeq  = new ArrayList<>();
@@ -389,8 +396,8 @@ public class PeptideScanCollector {
         finalPeptides.add(individualPeptides);  //Individual peptides
         //Currently only hardcoded code in here.
         rnaSeq.add("Uniprot");
-        rnaSeq.add("Combined");
-        rnaSeq.add("Individual");
+        rnaSeq.add(combined);
+        rnaSeq.add(individual);
         //Determines the sample size for sample indices.
         Integer sampleSize = 0;
         if (copdSampleSize > healthySampleSize) {
@@ -410,9 +417,6 @@ public class PeptideScanCollector {
                 finalPeptides.set(i, matchedScanPeptides);
             }
             csvWriter.generateCsvFile(finalPeptides.get(i), outputPath, sampleList, sampleSize);
-            Runtime.getRuntime().exec("sort -gk 1 " + outputPath);
-            System.out.println("sort -gk 1 " + outputPath);
-            System.out.println("Sorted file on column 1: sequence.");
         }
     }
 

@@ -14,28 +14,27 @@ import objects.Peptide;
  * @author vnijenhuis
  */
 public class ScanIDComparator {
+    /**
+     * Compares scan ID's between two peptide object collections.
+     * @param targetPeptides peptide collection one.
+     * @param peptides peptide collection two.
+     * @return peptides
+     */
     public final PeptideCollection compareScanIDs(final PeptideCollection targetPeptides, final PeptideCollection peptides) {
         int count = 0;
         for (Peptide targetPeptide: targetPeptides.getPeptides()) {
-            ArrayList<String> targetScanList = new ArrayList<>();
             for (Peptide peptide: peptides.getPeptides()) {
                 String nonMatchedScans = "";
                 String matchedScans = "";
                 ArrayList<String> scanList = new ArrayList<>();
                 String targetScan = targetPeptide.getScan();
                 String scan = peptide.getScan();
-                if (targetScan.contains("|")) {
-                    String[] split = targetScan.split("\\|");
-                    targetScanList.addAll(Arrays.asList(split));
-                } else {
-                    scanList.add(targetScan);
-                }
                 if (scan.contains("|")) {
                     String[] split = scan.split("\\|");
                     scanList.addAll(Arrays.asList(split));
                 }
                 for (String scanID: scanList) {
-                    if (!targetScanList.contains(scanID)) {
+                    if (!targetScan.contains(scanID)) {
                         if (nonMatchedScans.isEmpty()) {
                             nonMatchedScans += scanID;
                         } else {
