@@ -7,16 +7,15 @@
 #         Parameters         #
 ##############################
 
--in         Requires a path to the mRNASeq dataset(s) that contain sample fodlers.  (example: D:/LundRawAnalysis/Dataset/CombinedmRNASeq/)
--psm        Name of the peptide spectrum match csv file                             (example: "DB search psm.csv" or DB_search_psm.csv). 
-                                                                                    Use Quotes if whitespaces are present in the file name.
--db         Path + name of a public database fasta file.                            (example: D:/Uniprot/uniprot-taxonomy.fasta)
--cdb        Path + name of the combined protein database.                           (example: D:/Fastas/COPD19/COPD19-database.fa) 
--idb        Path to the individual protein database(s).                             (example: D:/Fastas/COPD19/Individuals/)
+-uniprot    Requires a path to the uniprot mRNASeq data that contain sample fodlers.    (example: D:/LundRawAnalysis/Dataset/Uniprot/)
+-individual Requires a path to the individual mRNASeq data that contain sample fodlers.    (example: D:/LundRawAnalysis/Dataset/IndividualmRNASeq/)
+-combined   Requires a path to the combined mRNASeq data that contain sample fodlers.    (example: D:/LundRawAnalysis/Dataset/CombinedmRNASeq/)
+-psm        Name of the peptide spectrum match csv file                                 (example: "DB search psm.csv" or DB_search_psm.csv). 
+                                                                                        Use Quotes if whitespaces are present in the file name.
 -out        Path to write the output data to.
--threads    Amount of threads to use for multi-threading. Default is 1 thread.      (example: 4)
--target     Name of the target sample. This parameter is case sensitive.            (example: COPD)
--control    Name of the control sample. This parameter is case sensitive.           (example: Control)
+-threads    Amount of threads to use for multi-threading. Default is 1 thread.          (example: 4)
+-target     Name of the target sample. This parameter is case sensitive.                (example: COPD)
+-control    Name of the control sample. This parameter is case sensitive.               (example: Control)
 
 ##############################
 #      Example command       #

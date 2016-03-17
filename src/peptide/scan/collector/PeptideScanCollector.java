@@ -58,19 +58,9 @@ public class PeptideScanCollector {
     private final ValidFileChecker fileChecker;
 
     /**
-     * List of psm files.
-     */
-    private ArrayList<String> psmFiles;
-
-    /**
      * Creates a collection of peptide objects.
      */
     private final PeptideCollectionCreator peptideCollection;
-
-    /**
-     * Collection of peptide objects.
-     */
-    private PeptideCollection peptides;
 
     /**
      * Csv file writer.
@@ -91,11 +81,6 @@ public class PeptideScanCollector {
      * list of sample names.
      */
     private ArrayList<String> sampleList;
-
-    /**
-     * String containing the path to the database name.
-     */
-    private String database;
 
     /**
      * Amount of threads used.
@@ -205,8 +190,6 @@ public class PeptideScanCollector {
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = parser.parse(options, args);
         sampleList = new ArrayList<>();
-        Integer targetSampleSize = 0;
-        Integer controlSampleSize = 0;
         if (Arrays.toString(args).toLowerCase().contains("help")) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("Peptide scan collector", options);
