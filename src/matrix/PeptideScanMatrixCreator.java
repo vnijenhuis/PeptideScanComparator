@@ -28,16 +28,22 @@ public class PeptideScanMatrixCreator {
         HashSet<ArrayList<String>> peptideMatrix = new HashSet<>();
         //Creates a index for each sample which is added to the newEntry array list.
         //Doing this step once saves a lot of processing time.
-        ArrayList<String> sampleEntries = new ArrayList<>();
+        ArrayList<String> sampleEntry = new ArrayList<>();
         for (String sample: sampleList) {
             for (int i = 0; i < sampleSize; i++) {
-                sampleEntries.add("-");
+                sampleEntry.add("0");
+            }
+        }
+        //Adds indices for the score values
+        for (String sample: sampleList) {
+            for (int i = 0; i < sampleSize; i++) {
+                sampleEntry.add("0.0");
             }
         }
         //Create list for each unique peptide sequence.
         for (Peptide peptide: peptides.getPeptides()) {
             newEntry = new ArrayList<>();
-            newEntry = createNewEntry(newEntry, peptide, sampleEntries);
+            newEntry = createNewEntry(newEntry, peptide, sampleEntry);
             boolean newArray = true;
             if (!peptideMatrix.isEmpty()) {
                 //Check if entry is new.
@@ -64,17 +70,17 @@ public class PeptideScanMatrixCreator {
      * @param newEntry empty array entry.
      * @param peptide peptide object with peptide data.
      * @param samples list of sample names.
-     * @param sampleSize size of the sample set.
+     * @param sampleSize amount of indices for each sample type.
      * @return 
      */
     private ArrayList<String> createNewEntry(ArrayList<String> newEntry, final Peptide peptide,
-            final ArrayList<String> sampleEntries) {
+        final ArrayList<String> sampleEntry) {
         //Adds peptide sequence to the entry.
         newEntry.add(peptide.getSequence());
         //Adds the first dataset name for this peptide sequence
         newEntry.add(peptide.getDataset());
         //Adds indices for each sample to the array.
-        newEntry.addAll(sampleEntries);
+        newEntry.addAll(sampleEntry);
         //Returns the new Array.
         return newEntry;
     }

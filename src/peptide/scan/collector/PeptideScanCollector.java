@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -187,6 +188,7 @@ public class PeptideScanCollector {
      * another program.
      */
     private void start(final String[] args) throws ParseException, IOException, InterruptedException, ExecutionException {
+        long startTime = System.currentTimeMillis()/1000;
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = parser.parse(options, args);
         sampleList = new ArrayList<>();
@@ -219,8 +221,25 @@ public class PeptideScanCollector {
             sampleList.add(controlSample);
             //Target is added second.
             sampleList.add(targetSample);
+            int controlSampleSize = 0;
+            int targetSampleSize = 0;
+            int sampleSize = 0;
             //Detect sample size and add all files to a list.
             for (int i = 0; i < uniprotPSM.length; i++) {
+                SampleSizeGenerator sizeGenerator = new SampleSizeGenerator();
+                ArrayList<Integer> sampleSizeList = sizeGenerator.getSamples(uniprotPSM[i], sampleList);
+                if (sampleSizeList.get(0) > controlSampleSize) {
+                    controlSampleSize = sampleSizeList.get(0);
+                }
+                //Gets the highest copd sample size.
+                if (sampleSizeList.get(1) > targetSampleSize) {
+                    targetSampleSize = sampleSizeList.get(1);
+                }
+                if (targetSampleSize > controlSampleSize) {
+                    sampleSize = targetSampleSize;
+                } else {
+                    sampleSize = controlSampleSize;
+                }
                 uniprotPSMList = new ArrayList<>();
                 combinedPSMList = new ArrayList<>();
                 individualPSMList = new ArrayList<>();
@@ -231,9 +250,12 @@ public class PeptideScanCollector {
                 uniprotPSMList.addAll(fileChecker.checkFileValidity(uniprotPSM[i], psmFile));
                 combinedPSMList.addAll(fileChecker.checkFileValidity(combinedPSM[i], psmFile));
                 individualPSMList.addAll(fileChecker.checkFileValidity(individualPSM[i], psmFile));
-                fragmentationControl(output);
+                
+                fragmentationControl(output, sampleSize);
             }
         }
+        long endTime = System.currentTimeMillis()/1000;
+        System.out.println("Process took " + (endTime - startTime) + " seconds.");
     }
 
     /**
@@ -244,12 +266,12 @@ public class PeptideScanCollector {
      * @throws IOException couldn't open/find the specified file. Usually appears when a file is already opened by
      * another program.
      */
-    private void fragmentationControl(final String output) throws IOException, InterruptedException, ExecutionException {
+    private void fragmentationControl(final String output, final Integer sampleSize)
+            throws IOException, InterruptedException, ExecutionException {
         Integer datasetCount = 0;
         //File separator for the given path.
         String separator = Pattern.quote(File.separator);
         HashMap<String, Integer> datasetNumbers = new HashMap<>();
-        PeptideCollection finalUniprotPeptides = new PeptideCollection();
         PeptideCollection finalCombinedPeptides = new PeptideCollection();
         PeptideCollection finalIndividualPeptides = new PeptideCollection();
         //Creates a protein object collection.
@@ -257,64 +279,70 @@ public class PeptideScanCollector {
 //        for (int i = 0; i < uniprotPSMList.size(); i++) {
         String method = "";
         ArrayList<String> rnaSeqs = new ArrayList<>();
-        for (int i = 0; i < 2; i++) {
-            Boolean newDataset = true;
+//        int psmSize = 4;
+        int psmSize = uniprotPSMList.size();
+        int indivIndex = 0;
+        int combIndex = 0;
+        for (int i = 0; i < psmSize; i++) {
             String[] uniprotPath = uniprotPSMList.get(i).split(separator);
-            String uniprot = uniprotPath[uniprotPath.length - 4] + " " + uniprotPath[uniprotPath.length - 3];
-            method = uniprotPath[uniprotPath.length - 4];
-            String[] combinedPath = combinedPSMList.get(i).split(separator);
-            String combined = combinedPath[combinedPath.length - 4] + " " + combinedPath[combinedPath.length - 3];
-            String[] individualPath = individualPSMList.get(i).split(separator);
-            String individual = individualPath[individualPath.length - 4] + " " + individualPath[individualPath.length - 3];
-            if (rnaSeqs.isEmpty()) {
-                rnaSeqs.add(uniprotPath[uniprotPath.length - 3]);
-                rnaSeqs.add(combinedPath[combinedPath.length - 3]);
-                rnaSeqs.add(individualPath[individualPath.length - 3]);
-            }
-            if (!datasetNumbers.isEmpty()) {
-                //Create hashmap with dataset names and numbers.
-                for (Map.Entry set : datasetNumbers.entrySet()) {
-                    if (set.getKey().equals(method)) {
-                        newDataset = false;
-                    }
-                }
-                //Add new dataset and corresponding number to the hashmap.
-                if (newDataset) {
-                    datasetCount += 1;
-                    datasetNumbers.put(method, datasetCount);
-                }
+            String sample = uniprotPath[uniprotPath.length - 2];
+            String uniprotFile = "";
+            String combinedFile = "";
+            String individualFile = "";
+            uniprotFile = uniprotPSMList.get(i);
+            if (!combinedPSMList.get(combIndex).contains(sample)) {
+                combinedFile = "NA";
+                System.out.println("WARNING: Couldn't find a combined database psm file for sample " + sample);
+            } else if (!individualPSMList.get(indivIndex).contains(sample)) {
+                individualFile = "NA";
+                System.out.println("WARNING: Couldn't find an individual database psm file for sample " + sample);
             } else {
-                datasetCount += 1;
-                datasetNumbers.put(method, datasetCount);
+//                System.out.println("WORKS: " + combinedPSMList.get(combIndex) + "   " + individualPSMList.get(indivIndex) + " " + sample);
+                combinedFile = combinedPSMList.get(combIndex);
+                individualFile = individualPSMList.get(indivIndex);
             }
-            //Create new peptide collections.
+            String combined = "";
+            String individual = "";
+            String[] combinedPath = {};
+            String[] individualPath = {};
             PeptideCollection uniprotSamplePeptides = new PeptideCollection();
             PeptideCollection combinedSamplePeptides = new PeptideCollection();
             PeptideCollection individualSamplePeptides = new PeptideCollection();
-            //Add peptide objects to the collections.
-            uniprotSamplePeptides = peptideCollection.createPeptideCollection(uniprotPSMList.get(i), uniprot, sampleList);
-            combinedSamplePeptides = peptideCollection.createPeptideCollection(combinedPSMList.get(i), combined, sampleList);
-            individualSamplePeptides = peptideCollection.createPeptideCollection(individualPSMList.get(i), individual, sampleList);
-            //Match combined peptides to the uniprot peptides.
-            scanMatcher = new ScanIDComparator(uniprotSamplePeptides, combinedSamplePeptides);
-            PeptideCollection matchedCombinedPeptides = scanMatcher.matchPeptideScanIDs(uniprotSamplePeptides, combinedSamplePeptides, threads);
-            //Match individual peptides to the uniprot peptides.
-            scanMatcher = new ScanIDComparator(uniprotSamplePeptides, individualSamplePeptides);
-            PeptideCollection matchedIndividualPeptides = scanMatcher.matchPeptideScanIDs(uniprotSamplePeptides, individualSamplePeptides, threads);
-            finalUniprotPeptides.getPeptides().addAll(uniprotSamplePeptides.getPeptides());
-            finalCombinedPeptides.getPeptides().addAll(matchedCombinedPeptides.getPeptides());
-            finalIndividualPeptides.getPeptides().addAll(matchedIndividualPeptides.getPeptides());
+            String uniprot = uniprotPath[uniprotPath.length - 4] + " " + uniprotPath[uniprotPath.length - 3];
+            uniprotSamplePeptides = peptideCollection.createPeptideCollection(uniprotFile, uniprot, sampleList);
+            method = uniprotPath[uniprotPath.length - 4];
+            if (!combinedFile.equals("NA")) {
+                combinedPath = combinedPSMList.get(combIndex).split(separator);
+                combined = combinedPath[combinedPath.length - 4] + " " + combinedPath[combinedPath.length - 3];
+                combinedSamplePeptides = peptideCollection.createPeptideCollection(combinedPSMList.get(combIndex), combined, sampleList);
+                scanMatcher = new ScanIDComparator(uniprotSamplePeptides, combinedSamplePeptides);
+                PeptideCollection matchedCombinedPeptides = scanMatcher.matchPeptideScanIDs(uniprotSamplePeptides, combinedSamplePeptides, threads);
+                finalCombinedPeptides.getPeptides().addAll(matchedCombinedPeptides.getPeptides());
+                combIndex++;
+            }
+            if (!individualFile.equals("NA")) {
+                individualPath = individualPSMList.get(indivIndex).split(separator);
+                individual = individualPath[individualPath.length - 4] + " " + individualPath[individualPath.length - 3];
+                individualSamplePeptides = peptideCollection.createPeptideCollection(individualPSMList.get(indivIndex), individual, sampleList);
+                scanMatcher = new ScanIDComparator(uniprotSamplePeptides, individualSamplePeptides);
+                PeptideCollection matchedIndividualPeptides = scanMatcher.matchPeptideScanIDs(uniprotSamplePeptides, individualSamplePeptides, threads);
+                finalIndividualPeptides.getPeptides().addAll(matchedIndividualPeptides.getPeptides());
+                indivIndex++;
+            }
+            if (rnaSeqs.isEmpty()) {
+                rnaSeqs.add(combinedPath[combinedPath.length - 3]);
+                rnaSeqs.add(individualPath[individualPath.length - 3]);
+            }
         }
         ArrayList<PeptideCollection> finalPeptides = new ArrayList<>();
-        finalPeptides.add(finalUniprotPeptides);
         finalPeptides.add(finalCombinedPeptides);
         finalPeptides.add(finalIndividualPeptides);
         for (int i = 0; i < finalPeptides.size(); i++) {
             //Create output file in the given output path
             String outputPath = output + method + "_" + rnaSeqs.get(i) +  "_scan_data.csv";
-//            HashSet<ArrayList<String>> peptideMatrix = scanMatrixCreator.createScanMatrix(finalPeptides.get(i), sampleList, sampleSize);
-//            peptideMatrix = setValues.addArrayValues(finalPeptides.get(i), peptideMatrix, sampleList ,datasetNumbers, sampleSize);
-            csvWriter.generateCsvFile(finalPeptides.get(i), outputPath, sampleList);
+            HashSet<ArrayList<String>> peptideMatrix = scanMatrixCreator.createScanMatrix(finalPeptides.get(i), sampleList, sampleSize);
+            peptideMatrix = setValues.addArrayValues(finalPeptides.get(i), peptideMatrix, sampleList , sampleSize);
+            csvWriter.generateCsvFile(peptideMatrix, outputPath, rnaSeqs.get(i), sampleList, sampleSize);
         }
     }
 }

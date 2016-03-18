@@ -44,6 +44,7 @@ public class PeptideCollectionCreator {
                 sample = folder;
             }
         }
+        String method = dataset.split(" ")[0];
         System.out.println("Collecting peptides from " + sample + " " + dataset + "...");
         FileReader fr = new FileReader(file);
         BufferedReader bffFr = new BufferedReader(fr);
@@ -99,14 +100,14 @@ public class PeptideCollectionCreator {
                     String sequence = data[sequenceIndex];
                     //Can remove (+15.99) and similar matches from a peptide sequence.
     //                sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
-                    Peptide peptide = new Peptide(sequence, scan, score, dataset, sample);
+                    Peptide peptide = new Peptide(method, scan, sequence, score);
                     Boolean newPeptide = true;
                     //Create new peptide objects.
                     if (!peptides.getPeptides().isEmpty()) {
                         for (Peptide p: peptides.getPeptides()) {
-                            if (p.getSequence().equals(sequence)) {
+                            if (p.getScanID().equals(scan)) {
                                 newPeptide = false;
-                                p.addScan(scan);
+                                
                                 p.addScore(score);
                                 break;
                             }

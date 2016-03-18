@@ -55,8 +55,8 @@ public class ScanIDComparator implements Callable{
                     String matchedScores = "";
                     ArrayList<String> scanList = new ArrayList<>();
                     ArrayList<String> scoreList = new ArrayList<>();
-                    String targetScans = peptide1.getScan();
-                    String scan = peptide2.getScan();
+                    String targetScans = peptide1.getScanID();
+                    String scan = peptide2.getScanID();
                     String score = peptide2.getScore();
                     if (scan.contains("|")) {
                         String[] split = scan.split("\\|");
@@ -73,7 +73,7 @@ public class ScanIDComparator implements Callable{
                     for (int i = 0; i < scanList.size(); i++) {
                         String scanID = scanList.get(i);
                         String scoreValue = scoreList.get(i);
-                        if (!targetScans.contains(scanList.get(i))) {
+                        if (!targetScans.contains(scanID)) {
                             if (nonMatchedScans.isEmpty()) {
                                 nonMatchedScans += scanID;
                                 nonMatchedScores += scoreValue;
@@ -96,26 +96,17 @@ public class ScanIDComparator implements Callable{
                                 matchedScores += "|" + scoreValue;
                             }
                         }
+//                        System.out.println("MATCHS: " + scanID + "\t" + nonMatchedScans);
+//                        break;
                     }
-                    if (matchedScans.isEmpty()) {
-                        peptide2.setUniprotScan("NA");
-                        peptide2.setUniprotScore("NA");
-                    } else {
-                        peptide2.setUniprotScan(matchedScans);
-                        peptide2.setUniprotScore(matchedScores);
-                    }
-                    if (nonMatchedScans.isEmpty()) {
-                        peptide2.setNonUniprotScan("NA");
-                        peptide2.setNonUniprotScore("NA");
-                    } else {
-                        peptide2.setNonUniprotScan(nonMatchedScans);
-                        peptide2.setNonUniprotScore(nonMatchedScores);
+                    if (!peptide2.getSequence().equals("")) {
                         peptides.addPeptide(peptide2);
                     }
                     break;
                 }
             }
         }
+        System.out.println("Collected " + peptides.getPeptides().size() + " non-matched peptides!");
         return peptides;
     }
     
