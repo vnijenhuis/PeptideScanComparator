@@ -4,15 +4,14 @@
  */
 package matrix;
 
-import collections.PeptideCollection;
+import collections.ScanIDCollection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import objects.Peptide;
+import objects.ScanID;
 
 /**
  * Compares Scan ID's between two peptide collections.
@@ -20,23 +19,38 @@ import objects.Peptide;
  */
 public class ScanIDComparator implements Callable{
     /**
-     * Collection of peptide objects.
+     * Collection of ScanID objects.
      */
-    private final PeptideCollection peptides1;
+    private final ScanIDCollection uniprotScans;
 
     /**
-     * Collection of peptide objects.
+     * Collection of ScanID objects.
      */
-    private final PeptideCollection peptides2;
+    private final ScanIDCollection sampleScans;
+
+    /**
+     * Name of the dataset.
+     */
+    private final String dataset;
+
+    /**
+     * List of all datasets.
+     */
+    private final ArrayList<String> datasets;
     
     /**
      * Multithreaded peptide collection matcher.
-     * @param collection1 first collection  of peptide objects.
-     * @param collection2 second collection of peptide objects.
+     * @param uniprot first collection  of peptide objects.
+     * @param collection second collection of peptide objects.
+     * @param dataset name of the dataset.
+     * @param datasets list of all datasets.
      */
-    public ScanIDComparator(final PeptideCollection collection1, final PeptideCollection collection2) {
-        this.peptides1 = collection1;
-        this.peptides2 = collection2;
+    public ScanIDComparator(final ScanIDCollection uniprot, final ScanIDCollection collection, final String dataset,
+            final ArrayList<String> datasets) {
+        this.uniprotScans = uniprot;
+        this.sampleScans = collection;
+        this.dataset = dataset;
+        this.datasets = datasets;
     }
     
     /**
@@ -45,81 +59,61 @@ public class ScanIDComparator implements Callable{
      */
     @Override
     public final Object call() {
-        PeptideCollection peptides = new PeptideCollection();
-        for (Peptide peptide2: peptides2.getPeptides()) {
-            for (Peptide peptide1: peptides1.getPeptides()) {
-                if (peptide2.getSequence().equals(peptide1.getSequence())) {
-                    String nonMatchedScans = "";
-                    String nonMatchedScores = "";
-                    String matchedScans = "";
-                    String matchedScores = "";
-                    ArrayList<String> scanList = new ArrayList<>();
-                    ArrayList<String> scoreList = new ArrayList<>();
-                    String targetScans = peptide1.getScanID();
-                    String scan = peptide2.getScanID();
-                    String score = peptide2.getScore();
-                    if (scan.contains("|")) {
-                        String[] split = scan.split("\\|");
-                        scanList.addAll(Arrays.asList(split));
-                    } else {
-                        scanList.add(scan);
-                    }
-                    if (score.contains("|")) {
-                        String[] split = score.split("\\|");
-                        scoreList.addAll(Arrays.asList(split));
-                    } else {
-                        scoreList.add(scan);
-                    }
-                    for (int i = 0; i < scanList.size(); i++) {
-                        String scanID = scanList.get(i);
-                        String scoreValue = scoreList.get(i);
-                        if (!targetScans.contains(scanID)) {
-                            if (nonMatchedScans.isEmpty()) {
-                                nonMatchedScans += scanID;
-                                nonMatchedScores += scoreValue;
-                            } else {
-                                if (!nonMatchedScans.contains(scanID)) {
-                                     nonMatchedScans += "|" + scanID;
-                                 }
-                                 if (!nonMatchedScores.contains(scoreValue)) {
-                                     nonMatchedScores += "|" + scoreValue;
-                                 }
-                            } 
-                        } else if (matchedScans.isEmpty()) {
-                            matchedScans += scanID;
-                            matchedScores += scoreValue;
-                        } else {
-                            if (!matchedScans.contains(scanID)) {
-                                matchedScans += "|" + scanID;
-                            }
-                            if (!matchedScores.contains(scoreValue)) {
-                                matchedScores += "|" + scoreValue;
+        int count = 0;
+        for (ScanID uniprotScan: uniprotScans.getScanIDs()) {
+            count++;
+            for (ScanID sampleScan: sampleScans.getScanIDs()) {
+                if (uniprotScan.getScanID().equals(sampleScan.getScanID())) {
+                    ArrayList<String> matchedSequences = new ArrayList<>();
+                    ArrayList<String> matchedScores = new ArrayList<>();
+                    ArrayList<String> targetSequences = uniprotScan.getUniprotSequences();
+                    ArrayList<String> sequences = new ArrayList<>();
+                    ArrayList<String> scores = new ArrayList<>();
+                    if (dataset.equals(datasets.get(1))) {
+                        sequences = sampleScan.getCombinedSequences();
+                        scores = sampleScan.getCombinedScores();
+                        sampleScan.getCombinedScores();
+                        for (int i =0; i <sequences.size(); i++) {
+                            if (targetSequences.contains(sequences.get(i))) {
+                                matchedSequences.add(sequences.get(i));
+                                matchedScores.add(scores.get(i));
                             }
                         }
-//                        System.out.println("MATCHS: " + scanID + "\t" + nonMatchedScans);
-//                        break;
+                        uniprotScan.addAllCombinedSequences(matchedSequences);
+                        uniprotScan.addAllCombinedScores(matchedScores);
+                    } else if (dataset.equals(datasets.get(2))) {
+                        sequences = sampleScan.getIndividualSequences();
+                        scores = sampleScan.getIndividualScores();
+                        sampleScan.getIndividualScores();
+                        for (int i =0; i <sequences.size(); i++) {
+                            if (targetSequences.contains(sequences.get(i))) {
+                                matchedSequences.add(sequences.get(i));
+                                matchedScores.add(scores.get(i));
+                            }
+                        }
+                        uniprotScan.addAllIndividualSequences(matchedSequences);
+                        uniprotScan.addAllIndividualScores(matchedScores);
                     }
-                    if (!peptide2.getSequence().equals("")) {
-                        peptides.addPeptide(peptide2);
-                    }
-                    break;
                 }
             }
+            if (count % 1000 == 0) {
+                System.out.println("Compared " + count + " scan IDs.");
+            }
         }
-        System.out.println("Collected " + peptides.getPeptides().size() + " non-matched peptides!");
-        return peptides;
+        System.out.println("Finished comparing " + count + " scan IDs!");
+        return uniprotScans;
     }
     
-    public final PeptideCollection matchPeptideScanIDs(final PeptideCollection collection1,
-        final PeptideCollection collection2, final Integer threads)
+    public final ScanIDCollection matchPeptideScanIDs(final ScanIDCollection collection1,
+        final ScanIDCollection collection2, final Integer threads, final String name, final ArrayList<String> datasets)
         throws InterruptedException, ExecutionException {
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         //Executes the call function of MultiThreadDatabaseMatcher.
-        Callable<PeptideCollection> callable = new ScanIDComparator(collection1, collection2);
+        Callable<ScanIDCollection> callable = new ScanIDComparator(collection1, collection2, name, datasets);
         //Collects the output from the call function
-        Future<PeptideCollection> future = pool.submit(callable);
-        PeptideCollection peptides = future.get();
+        Future<ScanIDCollection> future = pool.submit(callable);
+        ScanIDCollection finalScans = future.get();
         pool.shutdown();
-        return peptides;
+        return finalScans;
     }
 }
