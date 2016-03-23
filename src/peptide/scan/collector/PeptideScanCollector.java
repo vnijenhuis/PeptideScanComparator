@@ -164,14 +164,15 @@ public class PeptideScanCollector {
      *
      * @param args command line arguments.
      * @throws FileNotFoundException file was not found/does not exist.
-     * @throws IOException couldn't open/find the specified file. Usually appears when a file is already opened by
-     * another program.
+     * @throws IOException couldn't open/find the specified file. Usually
+     * appears when a file is already opened by another program.
      */
     private void start(final String[] args) throws ParseException, IOException, InterruptedException, ExecutionException {
-        long startTime = System.currentTimeMillis()/1000;
+        long startTime = System.currentTimeMillis() / 1000;
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = parser.parse(options, args);
         sampleList = new ArrayList<>();
+        //Help function.
         if (Arrays.toString(args).toLowerCase().contains("help")) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("Peptide scan collector", options);
@@ -185,14 +186,11 @@ public class PeptideScanCollector {
             String output = cmd.getOptionValue("out");
             String controlSample = cmd.getOptionValue("control");
             String targetSample = cmd.getOptionValue("target");
+            //Set the amount of threads to be used.
             if (cmd.hasOption("threads")) {
                 threads = Integer.parseInt(cmd.getOptionValue("threads"));
             } else {
                 threads = 2;
-            }
-            if (controlSample.isEmpty() || targetSample.isEmpty()) {
-                throw new IllegalArgumentException("You forgot to add a target or control sample."
-                        + "Please check the -target and -control input.");
             }
             //Check file and folder validity.
             fileChecker.isCsv(psmFile);
@@ -223,27 +221,26 @@ public class PeptideScanCollector {
                 uniprotPSMList = new ArrayList<>();
                 combinedPSMList = new ArrayList<>();
                 individualPSMList = new ArrayList<>();
+                //Check if given path is a directory.
                 fileChecker.isDirectory(uniprotPSM[i]);
                 fileChecker.isDirectory(combinedPSM[i]);
                 fileChecker.isDirectory(individualPSM[i]);
-                //Creates a list of peptide psm files.
+                //Creates a list of peptide psm files from each directory.
                 uniprotPSMList.addAll(fileChecker.checkFileValidity(uniprotPSM[i], psmFile));
                 combinedPSMList.addAll(fileChecker.checkFileValidity(combinedPSM[i], psmFile));
                 individualPSMList.addAll(fileChecker.checkFileValidity(individualPSM[i], psmFile));
                 fragmentationControl(output, sampleSize);
             }
         }
-        long endTime = System.currentTimeMillis()/1000;
+        long endTime = System.currentTimeMillis() / 1000;
         System.out.println("Process took " + (endTime - startTime) + " seconds.");
     }
 
     /**
-     * Processes the matrix and peptide files and creates an output file.
+     * Gathers matching data from all psm files.
      *
-     * @param psmFiles PSM files from RNASeq dataset.
-     * @param matrixFile matrix created by PeptideIdentificationQualityControl.
-     * @throws IOException couldn't open/find the specified file. Usually appears when a file is already opened by
-     * another program.
+     * @throws IOException couldn't open/find the specified file. Usually
+     * appears when a file is already opened by another program.
      */
     private void fragmentationControl(final String output, final Integer sampleSize)
             throws IOException, InterruptedException, ExecutionException {
@@ -252,29 +249,32 @@ public class PeptideScanCollector {
         //Split on the separator to get each folder name.
         String[] uniprotFolders = uniprotPSMList.get(0).split(separator);
         String[] combinedFolders = combinedPSMList.get(0).split(separator);
-        String[] individualFolders = individualPSMList .get(0).split(separator);
+        String[] individualFolders = individualPSMList.get(0).split(separator);
         //Use folder name to get dataset and method name.
         String uniprot = uniprotFolders[uniprotFolders.length - 3];
         String combined = combinedFolders[combinedFolders.length - 3];
         String individual = individualFolders[individualFolders.length - 3];
         String method = uniprotFolders[uniprotFolders.length - 4];
+        //Create a list with all dataset names.
         ArrayList<String> datasets = new ArrayList<>();
         datasets.add(uniprot);
         datasets.add(combined);
         datasets.add(individual);
+        //Gathers all uniprot scan ids.
         ScanIDCollection uniprotScans = scanCollection.createScanCollection(uniprotPSMList, uniprot, method, datasets, sampleList);
+        //Gathers all combined scn ids.
         ScanIDCollection combinedScans = scanCollection.createScanCollection(combinedPSMList, combined, method, datasets, sampleList);
+        //Gathers all individual scan ids.
         ScanIDCollection individualScans = scanCollection.createScanCollection(individualPSMList, individual, method, datasets, sampleList);
+        //Matches uniprot scan ids with the combined dataset. Matched combined scan id sequences are added to the uniprot dataset.
         scanMatcher = new ScanIDComparator(uniprotScans, combinedScans, combined, datasets);
-        ScanIDCollection matchedScans = scanMatcher.matchPeptideScanIDs(uniprotScans,combinedScans, threads, combined, datasets);
+        ScanIDCollection matchedScans = scanMatcher.matchPeptideScanIDs(uniprotScans, combinedScans, threads, combined, datasets);
+        //Matches uniprot scan ids with the individual dataset. Matched individual scan id sequences are added to the uniprot dataset.
         scanMatcher = new ScanIDComparator(matchedScans, individualScans, individual, datasets);
-        ScanIDCollection finalScans = scanMatcher.matchPeptideScanIDs(uniprotScans,individualScans, threads, individual, datasets);
+        ScanIDCollection finalScans = scanMatcher.matchPeptideScanIDs(uniprotScans, individualScans, threads, individual, datasets);
         //Create output file in the given output path
         String outputPath = output + method + "_scan_data.csv";
-//        ScanIDCollection peptideMatrix = scanMatrixCreator.createScanMatrix(uniprotScans);
-//        peptideMatrix = scanMatrixCreator.createScanMatrix(finalIndividualScans, finalScans, sampleList, sampleSize);
-//        peptideMatrix = setValues.addArrayValues(finalPeptides.get(i), peptideMatrix, sampleList , sampleSize);
-        csvWriter.generateCsvFile(finalScans, outputPath, sampleList, sampleSize);
-        
+        //Write data to the output path.
+        csvWriter.generateCsvFile(finalScans, outputPath, datasets);
     }
 }

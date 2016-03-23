@@ -9,13 +9,15 @@ import objects.ScanID;
 
 /**
  * A collection of Scan ID objects.
+ *
  * @author vnijenhuis
  */
 public class ScanIDCollection {
+
     /**
      * Creates a ArrayList for Scan ID objects.
      */
-    private final ArrayList<ScanID>  scanIDs;
+    private final ArrayList<ScanID> scanIDs;
 
     /**
      * Creates a new ArrayList.
@@ -31,7 +33,7 @@ public class ScanIDCollection {
     public final void addScanID(final ScanID scan) {
         scanIDs.add(scan);
     }
-    
+
     /**
      * Removes Scan ID objects from the ArrayList.
      * @param scan peptide object.
@@ -39,6 +41,7 @@ public class ScanIDCollection {
     public final void removeScanID(final ScanID scan) {
         scanIDs.remove(scan);
     }
+
     /**
      * Returns the ArrayList..
      * @return ArrayList of Scan ID objects..
