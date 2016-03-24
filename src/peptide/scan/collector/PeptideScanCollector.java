@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import matrix.ScanIDComparator;
-import tools.CsvWriter;
+import filewriter.CsvWriter;
 import tools.SampleSizeGenerator;
 import tools.ValidFileChecker;
 
@@ -33,9 +33,11 @@ import tools.ValidFileChecker;
 public class PeptideScanCollector {
 
     /**
-     * @param args the command line arguments
-     * @throws org.apache.commons.cli.ParseException
-     * @throws java.io.IOException
+     * @param args the command line arguments contains values for each commandline argument.
+     * @throws org.apache.commons.cli.ParseException Error encountered during parsing, parameter(s) missing etc.
+     * @throws java.io.IOException could not find or open file, file is being used by another program.
+     * @throws java.lang.InterruptedException program was interrupted.
+     * @throws java.util.concurrent.ExecutionException error in execution of the program.
      */
     public static void main(String[] args) throws ParseException, IOException, InterruptedException, ExecutionException {
         PeptideScanCollector peptideFragmentation = new PeptideScanCollector();

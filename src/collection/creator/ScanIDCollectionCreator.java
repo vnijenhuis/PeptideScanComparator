@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import objects.ScanID;
@@ -111,7 +110,13 @@ public class ScanIDCollectionCreator {
                         //Can remove (+15.99) and similar matches from a peptide sequence.
                         //                sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
                         Boolean newFileNumber = true;
-                        String fileNumber = scan.split(":")[0];
+                        String fileNumber = "";
+                        if (scan.contains(":")) {
+                            fileNumber = scan.split(":")[0];
+                        } else {
+                            fileNumber = sample;
+                            scan = sample + ":" + scan;
+                        }
                         //Create new scanID object.
                         ScanID peptideScan = new ScanID(method, scan, sequence, score, sample, dataset, datasets);
                         if (!scanFiles.entrySet().isEmpty()) {

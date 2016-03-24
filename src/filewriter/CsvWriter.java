@@ -2,7 +2,7 @@
  *  @author Vikthor Nijenhuis
  *  @project peptide fragmentation control *
  */
-package tools;
+package filewriter;
 
 import collections.ScanIDCollection;
 import java.io.FileWriter;
@@ -22,8 +22,7 @@ public class CsvWriter {
      *
      * @param finalScans set of peptide arrays.
      * @param outputPath output path and file name.
-     * @param samples set of sample names.
-     * @param sampleSize amount of samples per sample type.
+     * @param datasets list of dataset names.
      * @throws IOException Could not write to the file: file not found or is
      * used by another program.
      */
@@ -59,7 +58,6 @@ public class CsvWriter {
     public final String createCsvHeader(final String delimiter, final String lineEnding, final ArrayList<String> datasets) {
         String header = "";
         header += "Scan ID" + delimiter;
-        header += "Mass Spec Method" + delimiter;
         header += datasets.get(0) + " PSM sequences" + delimiter;
         header += datasets.get(1) + " PSM sequences" + delimiter;
         header += datasets.get(2) + " PSM sequences" + delimiter;
@@ -81,7 +79,6 @@ public class CsvWriter {
         String row = "";
         //Add data to the row.
         row += scanData.getScanID() + separator;
-        row += scanData.getMethod() + separator;
         //Gathers uniprot sequences
         for (int i = 0; i < scanData.getUniprotSequences().size(); i++) {
             if (scanData.getUniprotSequences().isEmpty() == true) {
