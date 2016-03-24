@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import matrix.ScanIDComparator;
-import objects.ScanID;
 import tools.CsvWriter;
 import tools.SampleSizeGenerator;
 import tools.ValidFileChecker;

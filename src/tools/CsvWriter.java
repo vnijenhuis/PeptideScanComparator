@@ -59,7 +59,7 @@ public class CsvWriter {
     public final String createCsvHeader(final String delimiter, final String lineEnding, final ArrayList<String> datasets) {
         String header = "";
         header += "Scan ID" + delimiter;
-        header += "Dataset" + delimiter;
+        header += "Mass Spec Method" + delimiter;
         header += datasets.get(0) + " PSM sequences" + delimiter;
         header += datasets.get(1) + " PSM sequences" + delimiter;
         header += datasets.get(2) + " PSM sequences" + delimiter;

@@ -12,6 +12,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import objects.ScanID;
 
@@ -36,9 +39,11 @@ public class ScanIDCollectionCreator {
      */
     public final ScanIDCollection createScanCollection(final ArrayList<String> peptideFiles, final String dataset,
             final String method, final ArrayList<String> datasets, final ArrayList<String> sampleList) throws FileNotFoundException, IOException {
+        //HashMap with the file number as key and a list of ScanIDs as value.
+        HashMap<String, ArrayList<ScanID>> scanFiles = new HashMap<>();
         // Read the file
         ScanIDCollection scanCollection = new ScanIDCollection();
-        for (String file : peptideFiles.subList(0, 3)) {
+        for (String file : peptideFiles) {
             //Pattern to split the path into folders.
             String pattern = Pattern.quote(File.separator);
             String[] folders = file.split(pattern);
@@ -105,35 +110,46 @@ public class ScanIDCollectionCreator {
                         String sequence = data[sequenceIndex];
                         //Can remove (+15.99) and similar matches from a peptide sequence.
                         //                sequence = sequence.replaceAll("\\(\\+[0-9]+\\.[0-9]+\\)", "");
-                        Boolean newScan = true;
-                        ScanID peptide = new ScanID(method, scan, sequence, score, sample, dataset, datasets);
-                        //Create new ScanID objects.
-                        if (!scanCollection.getScanIDs().isEmpty()) {
-                            for (ScanID entry : scanCollection.getScanIDs()) {
-                                if (entry.getScanID().equals(scan)) {
-                                    newScan = false;
-                                    //Add sequences to uniprot list.
-                                    if (dataset.equals(datasets.get(0)) && !entry.getUniprotSequences().contains(sequence)) {
-                                        entry.addUniprotSequence(sequence);
-                                        entry.addUniprotScore(score);
-                                    //Add sequences to combined list.
-                                    } else if (dataset.equals(datasets.get(1)) && !entry.getCombinedSequences().contains(sequence)) {
-                                        entry.addCombinedSequence(sequence);
-                                        entry.addCombinedScore(score);
-                                    //Add sequences to individual list.
-                                    } else if (dataset.equals(datasets.get(2)) && !entry.getIndividualSequences().contains(sequence)) {
-                                        entry.addIndividualSequence(sequence);
-                                        entry.addIndividualScore(score);
+                        Boolean newFileNumber = true;
+                        String fileNumber = scan.split(":")[0];
+                        //Create new scanID object.
+                        ScanID peptideScan = new ScanID(method, scan, sequence, score, sample, dataset, datasets);
+                        if (!scanFiles.entrySet().isEmpty()) {
+                            //Loop through entries of the HashMap.
+                            for (Map.Entry<String, ArrayList<ScanID>> entry : scanFiles.entrySet()) {
+                                //Match filenumber to HashMap keys.
+                                if (entry.getKey().equals(fileNumber)) {
+                                    newFileNumber = false;
+                                    Boolean newScanID = true;
+                                    for (ScanID scanObject : entry.getValue()) {
+                                        //If scan IDs match: add scan sequences to this scan ID.
+                                        if (scanObject.getScanID().equals(scan)) {
+                                            ArrayList<ScanID> newList = entry.getValue();
+                                            newList.remove(scanObject);
+                                            newScanID = false;
+                                            ScanID modifiedScanObject = setScanObjectValues(scanObject, sequence, score, dataset, datasets);
+                                            newList.add(modifiedScanObject);
+                                            scanFiles.put(fileNumber, newList);
+                                            break;
+                                        }
                                     }
-                                    break;
+                                    //If no scan ID was matched a new entry is added,
+                                    if (newScanID) {
+                                        entry.getValue().add(peptideScan);
+                                    }
                                 }
+                                //New scan file number is added to the hashmap.
                             }
-                            //Add new ScanIDs.
-                            if (newScan) {
-                                scanCollection.addScanID(peptide);
+                            if (newFileNumber) {
+                                ArrayList<ScanID> scanList = new ArrayList<>();
+                                scanList.add(peptideScan);
+                                scanFiles.put(fileNumber, scanList);
                             }
+                            //First entry of the HashMap.
                         } else {
-                            scanCollection.addScanID(peptide);
+                            ArrayList<ScanID> scanList = new ArrayList<>();
+                            scanList.add(peptideScan);
+                            scanFiles.put(fileNumber, scanList);
                         }
                     }
                 }
@@ -142,9 +158,42 @@ public class ScanIDCollectionCreator {
                 }
             }
             //Returns the collection of Scan ID objects.
-            System.out.println("Collected " + count + " scan IDs from "
+            System.out.println("Collected data from " + count + " scan IDs from "
                     + sample + " " + method + " " + dataset + "!");
         }
+        //Add all entries from the HashMap to a ScanID collection.
+        for (Map.Entry<String, ArrayList<ScanID>> entry : scanFiles.entrySet()) {
+            for (ScanID scanObject : entry.getValue()) {
+                scanCollection.addScanID(scanObject);
+            }
+        }
         return scanCollection;
+    }
+
+    /**
+     * Edits the scan ID sequence and score values based on the dataset where the scan ID came from.
+     *
+     * @param scanObject current ScanID object.
+     * @param sequence new ScanID sequence.
+     * @param score new ScanID score.
+     * @param dataset name of the dataset.
+     * @param datasets list of all dataset names.
+     * @return returns updated scanObject.
+     */
+    private ScanID setScanObjectValues(ScanID scanObject, final String sequence, final String score, final String dataset,
+            final ArrayList<String> datasets) {
+        if (dataset.equals(datasets.get(0)) && !scanObject.getUniprotSequences().contains(sequence)) {
+            scanObject.addUniprotSequence(sequence);
+            scanObject.addUniprotScore(score);
+            //Add sequences to combined list.
+        } else if (dataset.equals(datasets.get(1)) && !scanObject.getCombinedSequences().contains(sequence)) {
+            scanObject.addCombinedSequence(sequence);
+            scanObject.addCombinedScore(score);
+            //Add sequences to individual list.
+        } else if (dataset.equals(datasets.get(2)) && !scanObject.getIndividualSequences().contains(sequence)) {
+            scanObject.addIndividualSequence(sequence);
+            scanObject.addIndividualScore(score);
+        }
+        return scanObject;
     }
 }
