@@ -36,7 +36,7 @@ public class ScanIDCollectionCreator {
      * @throws FileNotFoundException could not find the specified file.
      * @throws IOException could not find/open the specified file.
      */
-    public final ScanIDCollection createScanCollection(final ArrayList<String> peptideFiles, final String dataset,
+    public final HashMap<String, ArrayList<ScanID>> createScanCollection(final ArrayList<String> peptideFiles, final String dataset,
             final String method, final ArrayList<String> datasets, final ArrayList<String> sampleList) throws FileNotFoundException, IOException {
         //HashMap with the file number as key and a list of ScanIDs as value.
         HashMap<String, ArrayList<ScanID>> scanFiles = new HashMap<>();
@@ -166,13 +166,7 @@ public class ScanIDCollectionCreator {
             System.out.println("Collected data from " + count + " scan IDs from "
                     + sample + " " + method + " " + dataset + "!");
         }
-        //Add all entries from the HashMap to a ScanID collection.
-        for (Map.Entry<String, ArrayList<ScanID>> entry : scanFiles.entrySet()) {
-            for (ScanID scanObject : entry.getValue()) {
-                scanCollection.addScanID(scanObject);
-            }
-        }
-        return scanCollection;
+        return scanFiles;
     }
 
     /**
@@ -187,6 +181,7 @@ public class ScanIDCollectionCreator {
      */
     private ScanID setScanObjectValues(ScanID scanObject, final String sequence, final String score, final String dataset,
             final ArrayList<String> datasets) {
+        //If sequences are not present for the given scan object, then they are added to the scan object.
         if (dataset.equals(datasets.get(0)) && !scanObject.getUniprotSequences().contains(sequence)) {
             scanObject.addUniprotSequence(sequence);
             scanObject.addUniprotScore(score);

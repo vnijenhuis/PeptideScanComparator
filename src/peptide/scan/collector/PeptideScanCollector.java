@@ -22,6 +22,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import matrix.ScanIDComparator;
 import filewriter.CsvWriter;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import objects.ScanID;
 import tools.SampleSizeGenerator;
 import tools.ValidFileChecker;
 
@@ -134,18 +138,6 @@ public class PeptideScanCollector {
                 .desc("Path to write output file to.  (/home/name/Combined/Matrix/).")
                 .build();
         options.addOption(output);
-        //Name of the target sample: will most likely be COPD
-        Option target = Option.builder("target")
-                .hasArg()
-                .desc("Give the name of the target sample. (example: COPD) (CASE SENSITIVE!)")
-                .build();
-        options.addOption(target);
-        //Name of the Control sample: will most likely be Control
-        Option control = Option.builder("control")
-                .hasArg()
-                .desc("Give the name of the control sample. (example: Control) (CASE SENSITIVE!)")
-                .build();
-        options.addOption(control);
         Option thread = Option.builder("threads")
                 .hasArg()
                 .optionalArg(true)
@@ -185,8 +177,6 @@ public class PeptideScanCollector {
             String[] individualPSM = cmd.getOptionValues("individual");
             String psmFile = cmd.getOptionValue("psm");
             String output = cmd.getOptionValue("out");
-            String controlSample = cmd.getOptionValue("control");
-            String targetSample = cmd.getOptionValue("target");
             //Set the amount of threads to be used.
             if (cmd.hasOption("threads")) {
                 threads = Integer.parseInt(cmd.getOptionValue("threads"));
@@ -197,28 +187,9 @@ public class PeptideScanCollector {
             fileChecker.isCsv(psmFile);
             fileChecker.isDirectory(output);
             //Control is added first.
-            sampleList.add(controlSample);
-            //Target is added second.
-            sampleList.add(targetSample);
-            int controlSampleSize = 0;
-            int targetSampleSize = 0;
             int sampleSize = 0;
             //Detect sample size and add all files to a list.
             for (int i = 0; i < uniprotPSM.length; i++) {
-                SampleSizeGenerator sizeGenerator = new SampleSizeGenerator();
-                ArrayList<Integer> sampleSizeList = sizeGenerator.getSamples(uniprotPSM[i], sampleList);
-                if (sampleSizeList.get(0) > controlSampleSize) {
-                    controlSampleSize = sampleSizeList.get(0);
-                }
-                //Gets the highest copd sample size.
-                if (sampleSizeList.get(1) > targetSampleSize) {
-                    targetSampleSize = sampleSizeList.get(1);
-                }
-                if (targetSampleSize > controlSampleSize) {
-                    sampleSize = targetSampleSize;
-                } else {
-                    sampleSize = controlSampleSize;
-                }
                 uniprotPSMList = new ArrayList<>();
                 combinedPSMList = new ArrayList<>();
                 individualPSMList = new ArrayList<>();
@@ -230,6 +201,18 @@ public class PeptideScanCollector {
                 uniprotPSMList.addAll(fileChecker.checkFileValidity(uniprotPSM[i], psmFile));
                 combinedPSMList.addAll(fileChecker.checkFileValidity(combinedPSM[i], psmFile));
                 individualPSMList.addAll(fileChecker.checkFileValidity(individualPSM[i], psmFile));
+                for (String file: uniprotPSMList) {
+                    String[] folders = file.split("\\\\");
+                    String sample = folders[folders.length-2];
+                    int newSize = (Integer.parseInt(sample.replaceAll("[A-Za-z]*", "")));
+                    if (sampleSize < newSize) {
+                        sampleSize = newSize;
+                    }
+                    sample = sample.replaceAll("\\d", "");
+                    if (!sampleList.contains(sample)) {
+                        sampleList.add(sample);
+                    }
+                }
                 fragmentationControl(output, sampleSize);
             }
         }
@@ -262,20 +245,27 @@ public class PeptideScanCollector {
         datasets.add(combined);
         datasets.add(individual);
         //Gathers all uniprot scan ids.
-        ScanIDCollection uniprotScans = scanCollection.createScanCollection(uniprotPSMList, uniprot, method, datasets, sampleList);
+        HashMap<String, ArrayList<ScanID>> uniprotScans = scanCollection.createScanCollection(uniprotPSMList, uniprot, method, datasets, sampleList);
         //Gathers all combined scn ids.
-        ScanIDCollection combinedScans = scanCollection.createScanCollection(combinedPSMList, combined, method, datasets, sampleList);
+        HashMap<String, ArrayList<ScanID>> combinedScans = scanCollection.createScanCollection(combinedPSMList, combined, method, datasets, sampleList);
         //Gathers all individual scan ids.
-        ScanIDCollection individualScans = scanCollection.createScanCollection(individualPSMList, individual, method, datasets, sampleList);
+        HashMap<String, ArrayList<ScanID>> individualScans = scanCollection.createScanCollection(individualPSMList, individual, method, datasets, sampleList);
         //Matches uniprot scan ids with the combined dataset. Matched combined scan id sequences are added to the uniprot dataset.
         scanMatcher = new ScanIDComparator(uniprotScans, combinedScans, combined, datasets);
-        ScanIDCollection matchedScans = scanMatcher.matchPeptideScanIDs(uniprotScans, combinedScans, threads, combined, datasets);
+        HashMap<String, ArrayList<ScanID>> matchedScans = scanMatcher.matchPeptideScanIDs(uniprotScans, combinedScans, threads, combined, datasets);
         //Matches uniprot scan ids with the individual dataset. Matched individual scan id sequences are added to the uniprot dataset.
         scanMatcher = new ScanIDComparator(matchedScans, individualScans, individual, datasets);
-        ScanIDCollection finalScans = scanMatcher.matchPeptideScanIDs(uniprotScans, individualScans, threads, individual, datasets);
+        HashMap<String, ArrayList<ScanID>> finalScans = scanMatcher.matchPeptideScanIDs(uniprotScans, individualScans, threads, individual, datasets);
+        ScanIDCollection finalScanCollection = new ScanIDCollection();
+        //Add all scan IDs to a final scan collection.
+        for (Map.Entry<String, ArrayList<ScanID>> entry : finalScans.entrySet()) {
+            for (ScanID scanEntry: entry.getValue()) {
+                finalScanCollection.addScanID(scanEntry);
+            }
+        }
         //Create output file in the given output path
         String outputPath = output + method + "_scan_data.csv";
         //Write data to the output path.
-        csvWriter.generateCsvFile(finalScans, outputPath, datasets);
+        csvWriter.generateCsvFile(finalScanCollection, outputPath, datasets);
     }
 }
